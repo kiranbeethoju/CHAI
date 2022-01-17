@@ -1,1 +1,5 @@
-pip3 install Flask
+Flask
+Jinja2
+Werkzeug
+gunicorn
+requests
