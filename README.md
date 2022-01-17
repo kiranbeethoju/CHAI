@@ -1,8 +1,5 @@
-# KIRAN BEETHOJU's PORTFOLIO 
+This Repo is dedicated for Teaching Machine Youtube Channel
 
-### 1.One of the Best "Resume and Job Description Relevance Scoring System" 
-- This project was done based on NLP techniques and custom algorithm to calculate relevance score for a Job description and Resume
-- Usage :  Just you need to Upload "Job description.pdf" and "Your Resume.pdf" at a time.
+Please find the more information here 
 
-http://matchjd.herokuapp.com
-
+https://teachingmachine.herokuapp.com/
