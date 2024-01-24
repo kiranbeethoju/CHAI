@@ -1,0 +1,299 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "8SxY2iPG-URE",
+        "outputId": "727371d4-2c66-4a0d-919d-a810174e6098"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Collecting medspacy==1.0.1\n",
+            "  Downloading medspacy-1.0.1.tar.gz (110 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m110.2/110.2 kB\u001b[0m \u001b[31m2.1 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25h  Preparing metadata (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "Requirement already satisfied: spacy>=3.4.1 in /usr/local/lib/python3.10/dist-packages (from medspacy==1.0.1) (3.6.1)\n",
+            "Collecting PyRuSH>=1.0.8 (from medspacy==1.0.1)\n",
+            "  Downloading PyRuSH-1.0.8-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (67 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m67.4/67.4 kB\u001b[0m \u001b[31m5.8 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hCollecting pysbd==0.3.4 (from medspacy==1.0.1)\n",
+            "  Downloading pysbd-0.3.4-py3-none-any.whl (71 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m71.1/71.1 kB\u001b[0m \u001b[31m6.8 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hRequirement already satisfied: jsonschema in /usr/local/lib/python3.10/dist-packages (from medspacy==1.0.1) (4.19.2)\n",
+            "Collecting medspacy_quickumls==2.7 (from medspacy==1.0.1)\n",
+            "  Downloading medspacy_quickumls-2.7-py3-none-any.whl (30 kB)\n",
+            "Requirement already satisfied: numpy>=1.8.2 in /usr/local/lib/python3.10/dist-packages (from medspacy_quickumls==2.7->medspacy==1.0.1) (1.23.5)\n",
+            "Collecting unidecode>=0.4.19 (from medspacy_quickumls==2.7->medspacy==1.0.1)\n",
+            "  Downloading Unidecode-1.3.7-py3-none-any.whl (235 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m235.5/235.5 kB\u001b[0m \u001b[31m7.7 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hRequirement already satisfied: nltk>=3.3 in /usr/local/lib/python3.10/dist-packages (from medspacy_quickumls==2.7->medspacy==1.0.1) (3.8.1)\n",
+            "Collecting medspacy-simstring>=2.1 (from medspacy_quickumls==2.7->medspacy==1.0.1)\n",
+            "  Downloading medspacy_simstring-2.1.tar.gz (68 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m69.0/69.0 kB\u001b[0m \u001b[31m7.9 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25h  Preparing metadata (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "Collecting unqlite>=0.8.1 (from medspacy_quickumls==2.7->medspacy==1.0.1)\n",
+            "  Downloading unqlite-0.9.6.tar.gz (580 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m580.0/580.0 kB\u001b[0m \u001b[31m10.2 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25h  Preparing metadata (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "Requirement already satisfied: pytest>=6 in /usr/local/lib/python3.10/dist-packages (from medspacy_quickumls==2.7->medspacy==1.0.1) (7.4.3)\n",
+            "Requirement already satisfied: six in /usr/local/lib/python3.10/dist-packages (from medspacy_quickumls==2.7->medspacy==1.0.1) (1.16.0)\n",
+            "Collecting Cython<3.0,>=0.25 (from PyRuSH>=1.0.8->medspacy==1.0.1)\n",
+            "  Downloading Cython-0.29.36-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl (1.9 MB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m1.9/1.9 MB\u001b[0m \u001b[31m15.5 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hRequirement already satisfied: setuptools in /usr/local/lib/python3.10/dist-packages (from PyRuSH>=1.0.8->medspacy==1.0.1) (67.7.2)\n",
+            "Collecting PyFastNER>=1.0.8 (from PyRuSH>=1.0.8->medspacy==1.0.1)\n",
+            "  Downloading PyFastNER-1.0.9-py3-none-any.whl (18 kB)\n",
+            "Collecting quicksectx>=0.3.5 (from PyRuSH>=1.0.8->medspacy==1.0.1)\n",
+            "  Downloading quicksectx-0.3.8-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (407 kB)\n",
+            "\u001b[2K     \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m407.7/407.7 kB\u001b[0m \u001b[31m18.5 MB/s\u001b[0m eta \u001b[36m0:00:00\u001b[0m\n",
+            "\u001b[?25hRequirement already satisfied: spacy-legacy<3.1.0,>=3.0.11 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (3.0.12)\n",
+            "Requirement already satisfied: spacy-loggers<2.0.0,>=1.0.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (1.0.5)\n",
+            "Requirement already satisfied: murmurhash<1.1.0,>=0.28.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (1.0.10)\n",
+            "Requirement already satisfied: cymem<2.1.0,>=2.0.2 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (2.0.8)\n",
+            "Requirement already satisfied: preshed<3.1.0,>=3.0.2 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (3.0.9)\n",
+            "Requirement already satisfied: thinc<8.2.0,>=8.1.8 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (8.1.12)\n",
+            "Requirement already satisfied: wasabi<1.2.0,>=0.9.1 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (1.1.2)\n",
+            "Requirement already satisfied: srsly<3.0.0,>=2.4.3 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (2.4.8)\n",
+            "Requirement already satisfied: catalogue<2.1.0,>=2.0.6 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (2.0.10)\n",
+            "Requirement already satisfied: typer<0.10.0,>=0.3.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (0.9.0)\n",
+            "Requirement already satisfied: pathy>=0.10.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (0.10.3)\n",
+            "Requirement already satisfied: smart-open<7.0.0,>=5.2.1 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (6.4.0)\n",
+            "Requirement already satisfied: tqdm<5.0.0,>=4.38.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (4.66.1)\n",
+            "Requirement already satisfied: requests<3.0.0,>=2.13.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (2.31.0)\n",
+            "Requirement already satisfied: pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (1.10.13)\n",
+            "Requirement already satisfied: jinja2 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (3.1.2)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (23.2)\n",
+            "Requirement already satisfied: langcodes<4.0.0,>=3.2.0 in /usr/local/lib/python3.10/dist-packages (from spacy>=3.4.1->medspacy==1.0.1) (3.3.0)\n",
+            "Requirement already satisfied: attrs>=22.2.0 in /usr/local/lib/python3.10/dist-packages (from jsonschema->medspacy==1.0.1) (23.1.0)\n",
+            "Requirement already satisfied: jsonschema-specifications>=2023.03.6 in /usr/local/lib/python3.10/dist-packages (from jsonschema->medspacy==1.0.1) (2023.11.1)\n",
+            "Requirement already satisfied: referencing>=0.28.4 in /usr/local/lib/python3.10/dist-packages (from jsonschema->medspacy==1.0.1) (0.31.0)\n",
+            "Requirement already satisfied: rpds-py>=0.7.1 in /usr/local/lib/python3.10/dist-packages (from jsonschema->medspacy==1.0.1) (0.13.0)\n",
+            "Requirement already satisfied: click in /usr/local/lib/python3.10/dist-packages (from nltk>=3.3->medspacy_quickumls==2.7->medspacy==1.0.1) (8.1.7)\n",
+            "Requirement already satisfied: joblib in /usr/local/lib/python3.10/dist-packages (from nltk>=3.3->medspacy_quickumls==2.7->medspacy==1.0.1) (1.3.2)\n",
+            "Requirement already satisfied: regex>=2021.8.3 in /usr/local/lib/python3.10/dist-packages (from nltk>=3.3->medspacy_quickumls==2.7->medspacy==1.0.1) (2023.6.3)\n",
+            "Requirement already satisfied: typing-extensions>=4.2.0 in /usr/local/lib/python3.10/dist-packages (from pydantic!=1.8,!=1.8.1,<3.0.0,>=1.7.4->spacy>=3.4.1->medspacy==1.0.1) (4.5.0)\n",
+            "Requirement already satisfied: iniconfig in /usr/local/lib/python3.10/dist-packages (from pytest>=6->medspacy_quickumls==2.7->medspacy==1.0.1) (2.0.0)\n",
+            "Requirement already satisfied: pluggy<2.0,>=0.12 in /usr/local/lib/python3.10/dist-packages (from pytest>=6->medspacy_quickumls==2.7->medspacy==1.0.1) (1.3.0)\n",
+            "Requirement already satisfied: exceptiongroup>=1.0.0rc8 in /usr/local/lib/python3.10/dist-packages (from pytest>=6->medspacy_quickumls==2.7->medspacy==1.0.1) (1.1.3)\n",
+            "Requirement already satisfied: tomli>=1.0.0 in /usr/local/lib/python3.10/dist-packages (from pytest>=6->medspacy_quickumls==2.7->medspacy==1.0.1) (2.0.1)\n",
+            "Requirement already satisfied: charset-normalizer<4,>=2 in /usr/local/lib/python3.10/dist-packages (from requests<3.0.0,>=2.13.0->spacy>=3.4.1->medspacy==1.0.1) (3.3.2)\n",
+            "Requirement already satisfied: idna<4,>=2.5 in /usr/local/lib/python3.10/dist-packages (from requests<3.0.0,>=2.13.0->spacy>=3.4.1->medspacy==1.0.1) (3.4)\n",
+            "Requirement already satisfied: urllib3<3,>=1.21.1 in /usr/local/lib/python3.10/dist-packages (from requests<3.0.0,>=2.13.0->spacy>=3.4.1->medspacy==1.0.1) (2.0.7)\n",
+            "Requirement already satisfied: certifi>=2017.4.17 in /usr/local/lib/python3.10/dist-packages (from requests<3.0.0,>=2.13.0->spacy>=3.4.1->medspacy==1.0.1) (2023.7.22)\n",
+            "Requirement already satisfied: blis<0.8.0,>=0.7.8 in /usr/local/lib/python3.10/dist-packages (from thinc<8.2.0,>=8.1.8->spacy>=3.4.1->medspacy==1.0.1) (0.7.11)\n",
+            "Requirement already satisfied: confection<1.0.0,>=0.0.1 in /usr/local/lib/python3.10/dist-packages (from thinc<8.2.0,>=8.1.8->spacy>=3.4.1->medspacy==1.0.1) (0.1.3)\n",
+            "Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.10/dist-packages (from jinja2->spacy>=3.4.1->medspacy==1.0.1) (2.1.3)\n",
+            "Building wheels for collected packages: medspacy, medspacy-simstring, unqlite\n",
+            "  Building wheel for medspacy (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "  Created wheel for medspacy: filename=medspacy-1.0.1-py3-none-any.whl size=146940 sha256=e30e4f53d78d077ecf7224bd8b85e17c26e2bba4332006d0b964a2623d3799f5\n",
+            "  Stored in directory: /root/.cache/pip/wheels/d0/57/d3/545ac3c12830d918b1cec6068d28ab93c191a6ad592d887ec9\n",
+            "  Building wheel for medspacy-simstring (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "  Created wheel for medspacy-simstring: filename=medspacy_simstring-2.1-cp310-cp310-linux_x86_64.whl size=1270271 sha256=40ebe3e295378e4c65a3705469d0d76f8efde1ebef767b2582ef1f7d1856afec\n",
+            "  Stored in directory: /root/.cache/pip/wheels/94/b5/28/29dc4cbf78fc7a34b2e993983e64e3e9792ec1e00eddaec8ef\n",
+            "  Building wheel for unqlite (setup.py) ... \u001b[?25l\u001b[?25hdone\n",
+            "  Created wheel for unqlite: filename=unqlite-0.9.6-cp310-cp310-linux_x86_64.whl size=1622632 sha256=c173fbfb913ddf82bca7883d2d665e5eb01c498ce03040d40257ad3ef42ea85c\n",
+            "  Stored in directory: /root/.cache/pip/wheels/81/f4/a1/7e97f75c3102460c515a52f33cd7d5d61a93a57408fd0efad8\n",
+            "Successfully built medspacy medspacy-simstring unqlite\n",
+            "Installing collected packages: medspacy-simstring, unidecode, pysbd, Cython, unqlite, quicksectx, PyFastNER, PyRuSH, medspacy_quickumls, medspacy\n",
+            "  Attempting uninstall: Cython\n",
+            "    Found existing installation: Cython 3.0.5\n",
+            "    Uninstalling Cython-3.0.5:\n",
+            "      Successfully uninstalled Cython-3.0.5\n",
+            "Successfully installed Cython-0.29.36 PyFastNER-1.0.9 PyRuSH-1.0.8 medspacy-1.0.1 medspacy-simstring-2.1 medspacy_quickumls-2.7 pysbd-0.3.4 quicksectx-0.3.8 unidecode-1.3.7 unqlite-0.9.6\n"
+          ]
+        }
+      ],
+      "source": [
+        "!pip3 install medspacy==1.0.1"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import medspacy\n",
+        "from medspacy.ner import TargetRule\n",
+        "from medspacy.visualization import *\n",
+        "\n",
+        "\n",
+        "# Load medspacy model\n",
+        "nlp = medspacy.load()\n",
+        "print(nlp.pipe_names)\n",
+        "\n",
+        "# Add rules for target concept extraction\n",
+        "target_matcher = nlp.get_pipe(\"medspacy_target_matcher\")\n",
+        "target_rules = [\n",
+        "    TargetRule(\"atrial fibrillation\", \"PROBLEM\"),\n",
+        "\n",
+        "    TargetRule(\"atrial fibrillation\", \"PROBLEM\", pattern=[{\"LOWER\": \"afib\"}]),\n",
+        "    TargetRule(\"pneumonia\", \"PROBLEM\"),\n",
+        "    TargetRule(\"Type II Diabetes Mellitus\", \"PROBLEM\",\n",
+        "              pattern=[\n",
+        "                  {\"LOWER\": \"type\"},\n",
+        "                  {\"LOWER\": {\"IN\": [\"2\", \"ii\", \"two\"]}},\n",
+        "                  {\"LOWER\": {\"IN\": [\"dm\", \"diabetes\"]}},\n",
+        "                  {\"LOWER\": \"mellitus\", \"OP\": \"?\"}\n",
+        "              ]),\n",
+        "    TargetRule(\"Janumet\", \"MEDICATION\"),\n",
+        "    TargetRule(\"Crocin\", \"MEDICATION\"),\n",
+        "    TargetRule(\"warfarin\", \"MEDICATION\")\n",
+        "]\n",
+        "target_matcher.add(target_rules)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "XeWcpLAX-ZCY",
+        "outputId": "1d622270-e681-4320-fc72-59d4828ca6c9"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "['medspacy_pyrush', 'medspacy_target_matcher', 'medspacy_context']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "text = \"\"\"\n",
+        "Past Medical History: 1. Atrial fibrillation 2. Type II Diabetes Mellitus Assessment and Plan:\n",
+        "There is no evidence of pneumonia. Continue Janumet, Crocin mg for Afib. Follow up for management of type 2 DM.\n",
+        "\"\"\"\n",
+        "\n",
+        "t2 = \"\"\"\n",
+        "\n",
+        "\"\"\"\n",
+        "doc = nlp(text)\n",
+        "visualize_ent(doc)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 122
+        },
+        "id": "WjCkc1uWBFux",
+        "outputId": "cd948a5f-d8a9-4de0-ff46-aab9ff30cb7e"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ],
+            "text/html": [
+              "<span class=\"tex2jax_ignore\"><div class=\"entities\" style=\"line-height: 2.5; direction: ltr\"><br>Past Medical History: 1. \n",
+              "<mark class=\"entity\" style=\"background: #ff7f0e; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    Atrial fibrillation\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">PROBLEM</span>\n",
+              "</mark>\n",
+              " 2. \n",
+              "<mark class=\"entity\" style=\"background: #ff7f0e; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    Type II Diabetes Mellitus\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">PROBLEM</span>\n",
+              "</mark>\n",
+              " Assessment and Plan:<br>There is \n",
+              "<mark class=\"entity\" style=\"background: #2ca02c; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    no evidence of\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">NEGATED_EXISTENCE</span>\n",
+              "</mark>\n",
+              " \n",
+              "<mark class=\"entity\" style=\"background: #ff7f0e; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    pneumonia\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">PROBLEM</span>\n",
+              "</mark>\n",
+              ". Continue \n",
+              "<mark class=\"entity\" style=\"background: #1f77b4; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    Janumet\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">MEDICATION</span>\n",
+              "</mark>\n",
+              ", \n",
+              "<mark class=\"entity\" style=\"background: #1f77b4; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    Crocin\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">MEDICATION</span>\n",
+              "</mark>\n",
+              " mg for \n",
+              "<mark class=\"entity\" style=\"background: #ff7f0e; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    Afib\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">PROBLEM</span>\n",
+              "</mark>\n",
+              ". Follow up for management of \n",
+              "<mark class=\"entity\" style=\"background: #ff7f0e; padding: 0.45em 0.6em; margin: 0 0.25em; line-height: 1; border-radius: 0.35em;\">\n",
+              "    type 2 DM\n",
+              "    <span style=\"font-size: 0.8em; font-weight: bold; line-height: 1; border-radius: 0.35em; vertical-align: middle; margin-left: 0.5rem\">PROBLEM</span>\n",
+              "</mark>\n",
+              ".<br></div></span>"
+            ]
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "for ent in doc.ents:\n",
+        "    print([ent.text, ent.label_])"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "IlghO4I6EQNj",
+        "outputId": "f1cbd49f-4651-4cc5-db33-0a99c1efab50"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "['Atrial fibrillation', 'PROBLEM']\n",
+            "['Type II Diabetes Mellitus', 'PROBLEM']\n",
+            "['pneumonia', 'PROBLEM']\n",
+            "['Janumet', 'MEDICATION']\n",
+            "['Crocin', 'MEDICATION']\n",
+            "['Afib', 'PROBLEM']\n",
+            "['type 2 DM', 'PROBLEM']\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "daQu_-0SHAOJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
