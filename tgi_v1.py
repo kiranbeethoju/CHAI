@@ -25,7 +25,6 @@ model = AutoModelForCausalLM.from_pretrained(
     model_path,
     model_type="llama",
     gpu_layers=50,
-    token=token
 )
 
 # Function to generate text
