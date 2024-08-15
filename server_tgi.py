@@ -4,7 +4,6 @@
 import os
 import subprocess
 from datetime import datetime
-from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 from text_generation import Client
 import time
