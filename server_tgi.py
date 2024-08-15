@@ -26,7 +26,6 @@ print("Downloading model.....")
 model_path = hf_hub_download(
     repo_id=model_id,
     filename=filename,
-    token=token,
     cache_dir="models",
 )
 
