@@ -1,9 +1,16 @@
-#wget shttps://huggingface.co/bartowski/Meta-Llama-3.1-70B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-70B-Instruct-Q4_K_L.gguf?download=true
 import os
+import sys
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from ctransformers import AutoModelForCausalLM
 import uvicorn
+
+# Check for ctransformers installation
+try:
+    from ctransformers import AutoModelForCausalLM
+except ImportError:
+    print("ctransformers is not installed. Installing now...")
+    os.system("pip install ctransformers[cuda]")
+    from ctransformers import AutoModelForCausalLM
 
 # Define the model path
 MODEL_PATH = "Meta-Llama-3.1-70B-Instruct-Q4_K_L.gguf"
@@ -14,11 +21,18 @@ if not os.path.exists(MODEL_PATH):
 
 # Load the model
 print("Loading the model...")
-model = AutoModelForCausalLM.from_pretrained(
-    MODEL_PATH,
-    model_type="llama",
-    gpu_layers=50  # Adjust based on your GPU memory
-)
+try:
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_PATH,
+        model_type="llama",
+        gpu_layers=50,  # Adjust based on your GPU memory
+        lib='cuda'  # Explicitly specify CUDA
+    )
+except Exception as e:
+    print(f"Error loading the model: {str(e)}")
+    print(f"Python version: {sys.version}")
+    print(f"ctransformers version: {AutoModelForCausalLM.__version__}")
+    raise
 
 app = FastAPI()
 
