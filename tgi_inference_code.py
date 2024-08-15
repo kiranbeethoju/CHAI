@@ -9,7 +9,7 @@ except:
 print(f"Current working directory is {os.getcwd()}")
 
 # Define model to be used
-model_path = "Meta-Llama-3.1-70B-Instruct-Q4_K_L.gguf"
+model_path = "bartowski/Meta-Llama-3.1-70B-Instruct-GGUF"
 
 # Download the model if it's not already present
 if not os.path.exists(model_path):
