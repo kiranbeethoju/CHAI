@@ -1,4 +1,6 @@
 import os
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+token = "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"
 try:
     from datetime import datetime
     from ctransformers import AutoModelForCausalLM
@@ -22,7 +24,8 @@ print("Loading the model...")
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
     model_type="llama",
-    gpu_layers=50  # Adjust this based on your GPU memory
+    gpu_layers=50,
+    token=token
 )
 
 # Function to generate text
