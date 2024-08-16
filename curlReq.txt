@@ -1,0 +1,17 @@
+curl 0.0.0.0:8000/v1/chat/completions \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "hugging-quants/Meta-Llama-3.1-70B-Instruct-GPTQ-INT4",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant."
+      },
+      {
+        "role": "user",
+        "content": "What is Deep Learning?"
+      }
+    ],
+    "max_tokens": 128
+  }'
