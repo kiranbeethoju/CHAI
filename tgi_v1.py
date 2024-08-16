@@ -1,9 +1,7 @@
-docker run --gpus all --shm-size 1g -ti -p 8080:80 \
-  -v hf_cache:/data \
-  -e MODEL_ID=hugging-quants/Meta-Llama-3.1-70B-Instruct-GPTQ-INT4 \
-  -e NUM_SHARD=4 \
-  -e QUANTIZE=gptq \
-  -e HF_TOKEN=$(cat ~/.cache/huggingface/token) \
-  -e MAX_INPUT_LENGTH=4000 \
-  -e MAX_TOTAL_TOKENS=4096 \
-  ghcr.io/huggingface/text-generation-inference:2.2.0
+docker run --runtime nvidia --gpus all --ipc=host -p 8000:8000 \
+  -v hf_cache:/root/.cache/huggingface \
+  vllm/vllm-openai:latest \
+  --model hugging-quants/Meta-Llama-3.1-70B-Instruct-GPTQ-INT4 \
+  --quantization gptq_marlin \
+  --tensor-parallel-size 1 \
+  --max-model-len 4096
