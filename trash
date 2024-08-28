@@ -79,12 +79,16 @@
         table.dataTable thead th, table.dataTable thead td {
             background-color: #00008b;
             color: white;
+            white-space: nowrap;
         }
         table.dataTable tbody tr:nth-child(even) {
             background-color: #f0f8ff;
         }
         .dataTables_scrollHead {
             overflow: visible !important;
+        }
+        .dataTables_wrapper .dataTables_scroll {
+            overflow: auto;
         }
     </style>
 </head>
@@ -121,7 +125,7 @@
             </div>
         </div>
         <h2>Excel Data</h2>
-        <table id="excelTable" class="display">
+        <table id="excelTable" class="display nowrap">
             <thead>
                 <tr id="excelTableHeader"></tr>
             </thead>
@@ -256,16 +260,15 @@
                         "paging": true,
                         "searching": true,
                         "info": true,
-                        "autoWidth": false,
                         "scrollX": true,
                         "scrollY": "400px",
                         "scrollCollapse": true,
-                        "columnDefs": [
-                            { "width": "10%", "targets": 0 }
-                        ],
                         "dom": 'Bfrtip',
                         "buttons": [
                             'excel'
+                        ],
+                        "columnDefs": [
+                            { "width": "150px", "targets": "_all" }
                         ],
                         "initComplete": function(settings, json) {
                             $(this).wrap("<div style='overflow-x: auto; width:100%;'></div>");
