@@ -229,16 +229,21 @@
                 $('#excelTableBody').empty();
 
                 if (data.length > 0) {
+                    // Get headers from the first object in the array
                     var headers = Object.keys(data[0]);
                     var headerRow = headers.map(header => `<th>${header}</th>`).join('');
-                    $('#excelTableHeader').append(`<tr>${headerRow}</tr>`);
+                    $('#excelTableHeader').append(headerRow);
 
-                    var tableData = data.map(item => {
-                        var row = headers.map(header => `<td>${item[header] ? item[header] : ''}</td>`).join('');
-                        return `<tr>${row}</tr>`;
+                    // Populate table body with all rows
+                    data.forEach(function(row) {
+                        var tableRow = $('<tr>');
+                        headers.forEach(function(header) {
+                            tableRow.append($('<td>').text(row[header] || ''));
+                        });
+                        $('#excelTableBody').append(tableRow);
                     });
-                    $('#excelTableBody').append(tableData.join(''));
 
+                    // Initialize DataTable
                     table = $('#excelTable').DataTable({
                         "paging": true,
                         "searching": true,
@@ -252,6 +257,9 @@
                             $(this).wrap("<div style='overflow-x: auto; width:100%;'></div>");
                         }
                     });
+                } else {
+                    console.log('No data available');
+                    $('#excelTableBody').append('<tr><td colspan="' + headers.length + '">No data available</td></tr>');
                 }
             }).fail(function (jqxhr, textStatus, error) {
                 console.error('Error fetching Excel data:', textStatus, error);
