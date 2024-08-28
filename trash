@@ -75,6 +75,8 @@
         }
         .dataTables_wrapper {
             margin-top: 20px;
+            width: 100%;
+            overflow-x: auto;
         }
         table.dataTable thead th, table.dataTable thead td {
             background-color: #00008b;
@@ -84,11 +86,12 @@
         table.dataTable tbody tr:nth-child(even) {
             background-color: #f0f8ff;
         }
-        .dataTables_scrollHead {
-            overflow: visible !important;
+        .dataTables_scroll {
+            overflow: visible;
         }
-        .dataTables_wrapper .dataTables_scroll {
-            overflow: auto;
+        .dataTables_scrollBody {
+            overflow-x: visible !important;
+            overflow-y: auto !important;
         }
     </style>
 </head>
@@ -257,22 +260,26 @@
 
                     // Initialize DataTable
                     table = $('#excelTable').DataTable({
-                        "paging": true,
-                        "searching": true,
-                        "info": true,
                         "scrollX": true,
                         "scrollY": "400px",
                         "scrollCollapse": true,
+                        "paging": true,
+                        "searching": true,
+                        "info": true,
                         "dom": 'Bfrtip',
-                        "buttons": [
-                            'excel'
-                        ],
+                        "buttons": ['excel'],
                         "columnDefs": [
                             { "width": "150px", "targets": "_all" }
                         ],
+                        "autoWidth": false,
                         "initComplete": function(settings, json) {
-                            $(this).wrap("<div style='overflow-x: auto; width:100%;'></div>");
+                            $(window).resize();
                         }
+                    });
+
+                    // Adjust the table when window resizes
+                    $(window).resize(function() {
+                        table.columns.adjust().draw();
                     });
                 } else {
                     console.log('No data available');
