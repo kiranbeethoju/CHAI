@@ -7,6 +7,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -16,7 +20,7 @@
             padding: 20px;
         }
         .container {
-            max-width: 1200px;
+            max-width: 95%;
             margin: 0 auto;
             background-color: white;
             padding: 20px;
@@ -67,6 +71,7 @@
         }
         #excelTable {
             width: 100% !important;
+            font-size: 10px;
         }
         .dataTables_wrapper {
             margin-top: 20px;
@@ -77,6 +82,9 @@
         }
         table.dataTable tbody tr:nth-child(even) {
             background-color: #f0f8ff;
+        }
+        .dataTables_scrollHead {
+            overflow: visible !important;
         }
     </style>
 </head>
@@ -223,7 +231,7 @@
                 console.log('Excel Data:', data);
 
                 if (table) {
-                    table.clear().destroy();
+                    table.destroy();
                 }
                 $('#excelTableHeader').empty();
                 $('#excelTableBody').empty();
@@ -250,8 +258,14 @@
                         "info": true,
                         "autoWidth": false,
                         "scrollX": true,
+                        "scrollY": "400px",
+                        "scrollCollapse": true,
                         "columnDefs": [
                             { "width": "10%", "targets": 0 }
+                        ],
+                        "dom": 'Bfrtip',
+                        "buttons": [
+                            'excel'
                         ],
                         "initComplete": function(settings, json) {
                             $(this).wrap("<div style='overflow-x: auto; width:100%;'></div>");
