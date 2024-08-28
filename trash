@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Payor and Date Selection</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #00008b;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #00008b;
+            text-align: center;
+        }
+        .filters {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        select, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #00008b;
+            border-radius: 4px;
+            background-color: white;
+            color: #00008b;
+        }
+        button {
+            cursor: pointer;
+            background-color: #00008b;
+            color: white;
+        }
+        .breadcrumb {
+            background-color: #e6f2ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .pdf-viewer {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .pdf-container {
+            width: 48%;
+            height: 500px;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #00008b;
+        }
+        #excelTable {
+            width: 100% !important;
+        }
+        .dataTables_wrapper {
+            margin-top: 20px;
+        }
+        table.dataTable thead th, table.dataTable thead td {
+            background-color: #00008b;
+            color: white;
+        }
+        table.dataTable tbody tr:nth-child(even) {
+            background-color: #f0f8ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EOB Validation Screen</h1>
+        <div class="filters">
+            <select id="payorSelect">
+                <option value="">Select Payor</option>
+                {% for payor in payors %}
+                    <option value="{{ payor }}">{{ payor }}</option>
+                {% endfor %}
+            </select>
+            <select id="dateSelect" disabled>
+                <option value="">Select Date</option>
+            </select>
+            <select id="batchSelect" disabled>
+                <option value="">Select Batch</option>
+            </select>
+            <select id="outputFileSelect" disabled>
+                <option value="">Select Output File</option>
+            </select>
+            <button id="clearSelections">Clear Selections</button>
+        </div>
+        <div class="breadcrumb" id="selectionBreadcrumb">
+            Selections: None
+        </div>
+        <div class="pdf-viewer">
+            <div class="pdf-container">
+                <iframe id="inputPdf" src="" frameborder="0"></iframe>
+            </div>
+            <div class="pdf-container">
+                <iframe id="outputPdf" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+        <h2>Excel Data</h2>
+        <table id="excelTable" class="display">
+            <thead>
+                <tr id="excelTableHeader"></tr>
+            </thead>
+            <tbody id="excelTableBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+    $(document).ready(function () {
+        var table;
+
+        function updateBreadcrumb() {
+            var payor = $('#payorSelect').val();
+            var date = $('#dateSelect').val();
+            var batch = $('#batchSelect').val();
+            var outputFile = $('#outputFileSelect').find(':selected').text();
+            var selections = [];
+            if (payor) selections.push(`Payor: ${payor}`);
+            if (date) selections.push(`Date: ${date}`);
+            if (batch) selections.push(`Batch: ${batch}`);
+            if (outputFile && outputFile !== 'Select Output File') selections.push(`Output File: ${outputFile}`);
+            $('#selectionBreadcrumb').text(selections.length ? 'Selections: ' + selections.join(' > ') : 'Selections: None');
+        }
+
+        $('#payorSelect').change(function () {
+            var payor = $(this).val();
+            console.log('Payor selected:', payor);
+            if (payor) {
+                $.getJSON(`/api/dates/${payor}`, function (data) {
+                    console.log('Dates received:', data);
+                    $('#dateSelect').prop('disabled', false).empty().append('<option value="">Select Date</option>');
+                    $.each(data, function (key, date) {
+                        $('#dateSelect').append(`<option value="${date}">${date}</option>`);
+                    });
+                }).fail(function (jqxhr, textStatus, error) {
+                    console.error('Error fetching dates:', textStatus, error);
+                });
+            } else {
+                $('#dateSelect').prop('disabled', true).empty().append('<option value="">Select Date</option>');
+                $('#batchSelect').prop('disabled', true).empty().append('<option value="">Select Batch</option>');
+                $('#outputFileSelect').prop('disabled', true).empty().append('<option value="">Select Output File</option>');
+            }
+            updateBreadcrumb();
+        });
+
+        $('#dateSelect').change(function () {
+            var payor = $('#payorSelect').val();
+            var date = $(this).val();
+            console.log('Date selected:', date);
+            if (date) {
+                $.getJSON(`/api/batches/${payor}/${date}`, function (data) {
+                    console.log('Batches received:', data);
+                    $('#batchSelect').prop('disabled', false).empty().append('<option value="">Select Batch</option>');
+                    $.each(data, function (key, batch) {
+                        $('#batchSelect').append(`<option value="${batch}">${batch}</option>`);
+                    });
+                }).fail(function (jqxhr, textStatus, error) {
+                    console.error('Error fetching batches:', textStatus, error);
+                });
+            } else {
+                $('#batchSelect').prop('disabled', true).empty().append('<option value="">Select Batch</option>');
+                $('#outputFileSelect').prop('disabled', true).empty().append('<option value="">Select Output File</option>');
+            }
+            updateBreadcrumb();
+        });
+
+        $('#batchSelect').change(function () {
+            var payor = $('#payorSelect').val();
+            var date = $('#dateSelect').val();
+            var batch = $(this).val();
+            console.log('Batch selected:', batch);
+            if (batch) {
+                $.getJSON(`/${payor}/${date}`, function (data) {
+                    console.log('Files received:', data);
+                    $('#outputFileSelect').prop('disabled', false).empty().append('<option value="">Select Output File</option>');
+                    $.each(data, function (key, file) {
+                        if (file.Input_file === batch) {
+                            $('#outputFileSelect').append(`<option value="${file.output_file_location}" data-input="${file.input_file_abs_location}">${file.output_file_name}</option>`);
+                        }
+                    });
+                }).fail(function (jqxhr, textStatus, error) {
+                    console.error('Error fetching files:', textStatus, error);
+                });
+            } else {
+                $('#outputFileSelect').prop('disabled', true).empty().append('<option value="">Select Output File</option>');
+            }
+            updateBreadcrumb();
+        });
+
+        $('#outputFileSelect').change(function () {
+            var payor = $('#payorSelect').val();
+            var date = $('#dateSelect').val();
+            var batch = $('#batchSelect').val();
+            var outputFile = $(this).find(':selected').text();
+            var inputFileUrl = $(this).find(':selected').data('input');
+            var outputFileUrl = $(this).val();
+            console.log('Output file selected:', outputFile);
+            console.log('Input file URL:', inputFileUrl);
+            console.log('Output file URL:', outputFileUrl);
+            $('#inputPdf').attr('src', inputFileUrl);
+            $('#outputPdf').attr('src', outputFileUrl);
+
+            var encodedBatch = encodeURIComponent(batch);
+            var encodedOutputFile = encodeURIComponent(outputFile);
+
+            $.getJSON(`/api/excel-data/${payor}/${date}/${encodedBatch}/${encodedOutputFile}`, function (data) {
+                console.log('Excel Data:', data);
+
+                if (table) {
+                    table.clear().destroy();
+                }
+                $('#excelTableHeader').empty();
+                $('#excelTableBody').empty();
+
+                if (data.length > 0) {
+                    var headers = Object.keys(data[0]);
+                    var headerRow = headers.map(header => `<th>${header}</th>`).join('');
+                    $('#excelTableHeader').append(`<tr>${headerRow}</tr>`);
+
+                    var tableData = data.map(item => {
+                        var row = headers.map(header => `<td>${item[header] ? item[header] : ''}</td>`).join('');
+                        return `<tr>${row}</tr>`;
+                    });
+                    $('#excelTableBody').append(tableData.join(''));
+
+                    table = $('#excelTable').DataTable({
+                        "paging": true,
+                        "searching": true,
+                        "info": true,
+                        "autoWidth": false,
+                        "scrollX": true,
+                        "columnDefs": [
+                            { "width": "10%", "targets": 0 }
+                        ],
+                        "initComplete": function(settings, json) {
+                            $(this).wrap("<div style='overflow-x: auto; width:100%;'></div>");
+                        }
+                    });
+                }
+            }).fail(function (jqxhr, textStatus, error) {
+                console.error('Error fetching Excel data:', textStatus, error);
+            });
+            updateBreadcrumb();
+        });
+
+        $('#clearSelections').click(function () {
+            console.log('Clear selections clicked');
+            $('#payorSelect').val('');
+            $('#dateSelect').prop('disabled', true).empty().append('<option value="">Select Date</option>');
+            $('#batchSelect').prop('disabled', true).empty().append('<option value="">Select Batch</option>');
+            $('#outputFileSelect').prop('disabled', true).empty().append('<option value="">Select Output File</option>');
+            $('#inputPdf').attr('src', '');
+            $('#outputPdf').attr('src', '');
+            if (table) {
+                table.clear().destroy();
+            }
+            $('#excelTableHeader').empty();
+            $('#excelTableBody').empty();
+            updateBreadcrumb();
+        });
+    });
+    </script>
+</body>
+</html>
