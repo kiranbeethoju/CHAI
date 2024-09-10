@@ -91,7 +91,7 @@
                 const agentDiv = document.createElement('div');
                 agentDiv.innerHTML = `
                     <h3 class="font-bold mb-2">${agent.name} Output</h3>
-                    <textarea id="agentOutput${index + 1}" class="w-full p-2 border rounded" rows="8" ${index === 0 ? 'readonly' : ''}></textarea>
+                    <textarea id="agentOutput${index + 1}" class="w-full p-2 border rounded" rows="8"></textarea>
                 `;
                 agentOutputsContainer.appendChild(agentDiv);
             });
@@ -126,11 +126,17 @@
                     previousResponse = document.getElementById(`agentOutput${agentIndex}`).value;
                 }
 
+                let userPrompt = document.getElementById(`userPrompt${agentIndex + 1}`).value;
+                userPrompt = userPrompt.replace('[CLINICAL_NOTES]', clinicalNotes);
+                if (agentIndex > 0) {
+                    userPrompt = userPrompt.replace(`[AGENT_${agentIndex}_RESPONSE]`, previousResponse);
+                }
+
                 currentRequest = axios.post('/process', {
                     clinical_notes: clinicalNotes,
                     agent_index: agentIndex + 1,
                     [`system_prompt_${agentIndex + 1}`]: document.getElementById(`systemPrompt${agentIndex + 1}`).value,
-                    [`user_prompt_${agentIndex + 1}`]: document.getElementById(`userPrompt${agentIndex + 1}`).value,
+                    [`user_prompt_${agentIndex + 1}`]: userPrompt,
                     previous_response: previousResponse
                 });
                 
