@@ -5,226 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Medical Coding Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 p-8">
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="p-8">
-            <h1 class="text-2xl font-bold mb-6">Interactive Medical Coding Interface</h1>
-            
-            <div class="mb-6">
-                <label for="clinicalNotes" class="block text-sm font-medium text-gray-700 mb-2">Clinical Notes:</label>
-                <textarea id="clinicalNotes" rows="6" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none" placeholder="Enter clinical notes here..."></textarea>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Interactive Medical Coding Interface</h1>
+        
+        <div class="mb-6">
+            <label for="clinicalNotes" class="block mb-2 font-bold">Clinical Notes:</label>
+            <textarea id="clinicalNotes" class="w-full p-2 border rounded" rows="6"></textarea>
+        </div>
+        
+        <div class="mb-6 flex justify-center space-x-4">
+            <button id="submitBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
+            <button id="clearBtn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Clear</button>
+        </div>
+
+        <div id="agentContainer" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div id="agentInputs" class="space-y-6">
+                <!-- Agent inputs will be dynamically added here -->
             </div>
-
-            <div class="mb-6">
-                <button id="submitBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">Submit</button>
-                <button id="clearBtn" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Clear</button>
+            <div id="agentOutputs" class="space-y-6">
+                <!-- Agent outputs will be dynamically added here -->
             </div>
-
-            <div id="agentPrompts"></div>
-
-            <div id="results" class="mt-8"></div>
         </div>
     </div>
 
+    <div id="loader" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+
+    <div id="notification" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden"></div>
+
     <script>
         const agentPrompts = [
-            {
-                name: "Agent 1: DX Extraction",
-                systemPrompt: `You are an expert ICD extraction agent. Your tasks are:
-1. Carefully analyze the provided clinical notes, which may be extensive.
-2. Identify all positive/abnormal diseases or conditions.
-3. Pay special attention to trauma and sepsis. If these are suspected, positive, or abnormal, they should be considered as potential primary diagnoses (PDx).
-4. Extract exact reference lines that support each finding.
-5. Provide relevant surrounding context for each condition.
-6. Format your response as a structured list of findings, each with its supporting reference and context.
-7. Clearly indicate if trauma or sepsis are identified, and explain why they might be considered as PDx.
-8. Do not make assumptions beyond what's explicitly stated in the notes. If information is ambiguous or missing, state this clearly.`,
-                userPrompt: `Analyze the following clinical note, paying special attention to any indications of trauma or sepsis:
-
-[CLINICAL_NOTES]
-
-Remember:
-- Focus on extracting factual information without inference.
-- Highlight any mentions or indications of trauma or sepsis.
-- Provide exact quotes for all significant findings.
-- If the note is extensive, ensure you've thoroughly examined all sections before concluding your analysis.`
-            },
-            {
-                name: "Agent 2: PDx-SDx-PCS Determination",
-                systemPrompt: `You are a specialist agent tasked with:
-1. Thoroughly reviewing the extracted information from Agent 1.
-2. Identifying the primary diagnosis (PDx) based on the chief complaint, presenting symptoms, and any highlighted conditions (especially trauma or sepsis).
-3. Listing secondary diagnoses (SDx) in order of importance to the current encounter.
-4. Suggesting a primary procedure code (PCS) if applicable.
-5. Providing a detailed rationale for each diagnosis and procedure code selection.
-6. Ensuring all decisions are based solely on the information provided, without making assumptions.
-7. Clearly stating if there's insufficient information to make a definitive determination.`,
-                userPrompt: `Based on the following extracted information, determine the PDx, SDx, and PCS:
-
-[AGENT_1_RESPONSE]
-
-Guidelines:
-- Consider trauma or sepsis as potential PDx if they were identified in the extraction.
-- Rank secondary diagnoses based on their impact on patient care for this encounter.
-- Provide clear reasoning for your PDx selection, especially if choosing between multiple significant conditions.
-- If suggesting a PCS, explain why it's necessary based on the available information.`
-            },
-            {
-                name: "Agent 3: Applying Coding Clinics",
-                systemPrompt: `You are a coding clinics expert with deep knowledge of ICD-10-CM guidelines and coding clinics. Your tasks are:
-1. Review the PDx, SDx, and PCS information provided.
-2. Apply the appropriate guidelines from ICD-10-CM and relevant coding clinics.
-3. Suggest any necessary adjustments or corrections to the codes.
-4. Provide a detailed explanation for each adjustment, citing relevant coding guidelines and clinics.
-5. Intelligently handle coding clinic conflicts by:
-   a. Identifying any contradictions between different coding clinics or between clinics and general guidelines.
-   b. Explaining the nature of the conflict.
-   c. Recommending the most appropriate approach based on the most recent guidance or the guidance that best fits the specific clinical scenario.
-   d. Clearly stating your reasoning for choosing one approach over another in cases of conflict.
-6. Ensure all code selections and sequences adhere to the latest ICD-10-CM guidelines and coding clinic advice.
-7. If faced with ambiguity, explain the different possible interpretations and your recommended approach.`,
-                userPrompt: `Review and refine the following diagnosis and procedure codes based on ICD-10-CM guidelines and coding clinics:
-
-[AGENT_2_RESPONSE]
-
-Guidelines:
-- Apply all relevant ICD-10-CM guidelines and coding clinic advice.
-- Pay special attention to any potential conflicts between different coding clinics or between clinics and general guidelines.
-- Provide detailed explanations for any changes, citing specific guidelines or coding clinics.
-- If you encounter any ambiguities or conflicts, explain them clearly and provide your recommended approach with reasoning.`
-            },
-            {
-                name: "Agent 4: AHA and Custom Rules Rearrangement",
-                systemPrompt: `You are an AHA coding clinics specialist with expertise in code sequencing. Your tasks are:
-1. Review the adjusted PDx, SDx, and PCS information.
-2. Strictly rearrange the PDx and SDx based on AHA coding guidelines and provided custom rules.
-3. Ensure the final code sequence adheres to:
-   a. Official AHA recommendations
-   b. Custom rules provided (which are extensions of AHA guidelines)
-4. Provide a final list of codes in the correct sequence.
-5. For each rearrangement or change in sequencing, provide:
-   a. The specific AHA guideline or custom rule applied
-   b. A clear explanation of why this rule takes precedence in this case
-6. If there are any conflicts between AHA guidelines and custom rules, explain the conflict and justify your chosen approach.
-7. Ensure that the rationale for the final sequence is clear, especially for the selection and ordering of the PDx and major SDx codes.`,
-                userPrompt: `Perform a final review and rearrangement of the following codes based strictly on AHA coding guidelines and provided custom rules:
-
-[AGENT_3_RESPONSE]
-
-Custom Rules (extensions of AHA guidelines):
-1. If trauma and sepsis are both present, trauma takes precedence as PDx unless sepsis is explicitly documented as the reason for admission.
-2. Chronic conditions should be sequenced after acute conditions unless they directly impact the current treatment plan.
-3. When multiple related conditions are present, code the underlying condition first if it's actively being treated.
-
-Guidelines:
-- Strictly adhere to AHA guidelines and the provided custom rules for sequencing.
-- Provide a clear explanation for each sequencing decision, citing the specific guideline or rule applied.
-- If any conflicts arise between AHA guidelines and custom rules, explain the conflict and your resolution.
-- Ensure the final code list is in the correct sequence with PDx clearly identified.`
-            }
+            { name: "Agent 1: DX Extraction", systemPrompt: "Extract diagnoses from the clinical notes.", userPrompt: "Extract diagnoses from the following clinical notes: [CLINICAL_NOTES]" },
+            { name: "Agent 2: PDx-SDx-PCS Determination", systemPrompt: "Determine principal diagnosis, secondary diagnoses, and procedures.", userPrompt: "Determine the principal diagnosis, secondary diagnoses, and procedures based on the following extracted diagnoses: [AGENT_1_RESPONSE]" },
+            { name: "Agent 3: Applying Coding Clinics", systemPrompt: "Apply coding clinics to the diagnoses and procedures.", userPrompt: "Apply relevant coding clinics to the following diagnoses and procedures: [AGENT_2_RESPONSE]" },
+            { name: "Agent 4: AHA and Custom Rules Rearrangement", systemPrompt: "Apply AHA and custom rules to rearrange the codes.", userPrompt: "Apply AHA and custom rules to rearrange the following codes: [AGENT_3_RESPONSE]" }
         ];
 
-        function createPromptInputs() {
-            const container = document.getElementById('agentPrompts');
+        function createAgentInputs() {
+            const agentInputsContainer = document.getElementById('agentInputs');
             agentPrompts.forEach((agent, index) => {
                 const agentDiv = document.createElement('div');
-                agentDiv.className = 'mb-6 p-4 border rounded-lg';
                 agentDiv.innerHTML = `
-                    <h3 class="text-lg font-semibold mb-2">${agent.name}</h3>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">System Prompt:</label>
-                        <textarea id="systemPrompt${index}" rows="6" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none">${agent.systemPrompt}</textarea>
+                    <h3 class="font-bold mb-2">${agent.name}</h3>
+                    <div class="mb-2">
+                        <label class="block mb-1">System Prompt:</label>
+                        <textarea id="systemPrompt${index + 1}" class="w-full p-2 border rounded" rows="3">${agent.systemPrompt}</textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">User Prompt:</label>
-                        <textarea id="userPrompt${index}" rows="6" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none">${agent.userPrompt}</textarea>
+                        <label class="block mb-1">User Prompt:</label>
+                        <textarea id="userPrompt${index + 1}" class="w-full p-2 border rounded" rows="3">${agent.userPrompt}</textarea>
                     </div>
                 `;
-                container.appendChild(agentDiv);
+                agentInputsContainer.appendChild(agentDiv);
             });
         }
 
-        async function processNotes() {
-            const clinicalNotes = document.getElementById('clinicalNotes').value;
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
-
-            const loaders = [];
-            const resultPres = [];
-
-            for (let i = 0; i < agentPrompts.length; i++) {
-                const agentResult = document.createElement('div');
-                agentResult.className = 'mb-6 p-4 border rounded-lg';
-                agentResult.innerHTML = `
-                    <h3 class="text-lg font-semibold mb-2">${agentPrompts[i].name} Result</h3>
-                    <div class="loader mx-auto mb-4"></div>
-                    <pre id="result${i}" class="whitespace-pre-wrap"></pre>
+        function createAgentOutputs() {
+            const agentOutputsContainer = document.getElementById('agentOutputs');
+            agentPrompts.forEach((agent, index) => {
+                const agentDiv = document.createElement('div');
+                agentDiv.innerHTML = `
+                    <h3 class="font-bold mb-2">${agent.name} Output</h3>
+                    <div id="agentOutput${index + 1}" class="bg-gray-100 p-4 rounded min-h-[100px]"></div>
                 `;
-                resultsDiv.appendChild(agentResult);
+                agentOutputsContainer.appendChild(agentDiv);
+            });
+        }
 
-                loaders.push(agentResult.querySelector('.loader'));
-                resultPres.push(document.getElementById(`result${i}`));
-            }
+        function showLoader() {
+            document.getElementById('loader').classList.remove('hidden');
+        }
 
-            try {
-                const response = await fetch('/process', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
+        function hideLoader() {
+            document.getElementById('loader').classList.add('hidden');
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.remove('hidden');
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        async function processAgents() {
+            const clinicalNotes = document.getElementById('clinicalNotes').value;
+            
+            for (let i = 0; i < agentPrompts.length; i++) {
+                showLoader();
+                try {
+                    const response = await axios.post('/process', {
                         clinical_notes: clinicalNotes,
-                        system_prompt_1: document.getElementById('systemPrompt0').value,
-                        user_prompt_1: document.getElementById('userPrompt0').value,
-                        system_prompt_2: document.getElementById('systemPrompt1').value,
-                        user_prompt_2: document.getElementById('userPrompt1').value,
-                        system_prompt_3: document.getElementById('systemPrompt2').value,
-                        user_prompt_3: document.getElementById('userPrompt2').value,
-                        system_prompt_4: document.getElementById('systemPrompt3').value,
-                        user_prompt_4: document.getElementById('userPrompt3').value,
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                        system_prompt_1: document.getElementById(`systemPrompt${i + 1}`).value,
+                        user_prompt_1: document.getElementById(`userPrompt${i + 1}`).value.replace('[CLINICAL_NOTES]', clinicalNotes).replace(`[AGENT_${i}_RESPONSE]`, document.getElementById(`agentOutput${i}`).textContent)
+                    });
+                    document.getElementById(`agentOutput${i + 1}`).textContent = response.data[0];
+                    showNotification(`Agent ${i + 1} completed successfully`);
+                } catch (error) {
+                    console.error('Error processing agent:', error);
+                    document.getElementById(`agentOutput${i + 1}`).textContent = 'Error processing agent';
+                } finally {
+                    hideLoader();
                 }
-
-                const results = await response.json();
-
-                for (let i = 0; i < results.length; i++) {
-                    loaders[i].style.display = 'none';
-                    resultPres[i].textContent = results[i];
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                resultsDiv.innerHTML += `<p class="text-red-500">An error occurred: ${error.message}</p>`;
             }
         }
 
-        document.getElementById('submitBtn').addEventListener('click', processNotes);
+        document.addEventListener('DOMContentLoaded', () => {
+            createAgentInputs();
+            createAgentOutputs();
 
-        document.getElementById('clearBtn').addEventListener('click', () => {
-            document.getElementById('clinicalNotes').value = '';
-            document.getElementById('results').innerHTML = '';
+            document.getElementById('submitBtn').addEventListener('click', processAgents);
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                document.getElementById('clinicalNotes').value = '';
+                document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.textContent = '');
+            });
         });
-
-        createPromptInputs();
     </script>
 </body>
 </html>
