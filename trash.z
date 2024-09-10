@@ -1,0 +1,115 @@
+import requests
+from tqdm import tqdm
+
+def make_api_request(temp, model_name, url, systemPrompt, userPrompt):
+    API_KEY = "Key"
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": API_KEY,
+    }
+    payload = {
+        "messages": [
+            {
+                "role": "system",
+                "content": [{"type": "text", "text": systemPrompt}]
+            },
+            {
+                "role": "user",
+                "content": [{"type": "text", "text": userPrompt}]
+            }
+        ],
+        "temperature": temp,
+        "top_p": 0.95,
+        "max_tokens": 3057
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise SystemExit(f"Failed to make the request. Error: {e}")
+    
+    response_data = response.json()
+    return response_data
+
+def run_agent_pipeline():
+    # Agent 1: DX Extraction with Reference Lines
+    systemPrompt1 = """You are an expert ICD extraction agent. Your task is to:
+    1. Identify positive/abnormal diseases or conditions from the given clinical notes.
+    2. Extract reference lines that support these findings.
+    3. Provide relevant surrounding context for each condition.
+    4. Format your response as a structured list of findings, each with its supporting reference and context."""
+
+    userPrompt1 = """Analyze the following clinical note and extract key medical information:
+
+    History of Present Illness
+    H&p was written by medical student under CC: Fatigue and Vomiting
+    patient is a 64 y.o. female with PMH of CKD on dialysis (MWF), multiple myeloma, and HTN who presents with 3 days of dizziness, vomiting, and abdominal discomfort. Patient was discharged from St Hospital on Sunday. The patient daughter states that the patient started feeling dizzy later that night. They stated that th patient has reduced her diet to little to not sodium and last night on the 20th the patient had 4-5 episode of emesis. She describes the emesis as a small amount of clear white fluid with no food or blood. The patient has taken ondansetron without improvement of her nausea.  Patient denies any chest pain or SOB.  PMH as above
+    FH: Colon Ca in sister and lung ca in mother"""
+
+    with tqdm(total=4, desc="Running Agent Pipeline", unit="step") as pbar:
+        agentResponse1 = make_api_request(0.5, "gpt-4o", 
+        "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt1, 
+        userPrompt1)
+        pbar.update(1)
+        
+        with open('output1.txt','w') as f:
+            f.write(str(agentResponse1))
+        print("Agent 1 Response:", agentResponse1["choices"][0]["message"]["content"])
+
+        # Agent 2: Context with Reference Lines and Entities, PDx-SDx Prompt
+        systemPrompt2 = """You are a specialist agent tasked with:
+        1. Reviewing the extracted information from Agent 1.
+        2. Identifying the primary diagnosis (PDx) based on the chief complaint and presenting symptoms.
+        3. Listing secondary diagnoses (SDx) in order of importance to the current encounter.
+        4. Suggesting a primary procedure code (PCS) if applicable.
+        5. Providing a brief rationale for each diagnosis and procedure code selection."""
+
+        userPrompt2 = f"Based on the following extracted information, determine the PDx, SDx, and PCS:\n\n{agentResponse1['choices'][0]['message']['content']}"
+
+        pdx_sdx_pcs_output = make_api_request(0.5, "gpt-4o", 
+        "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt2, 
+        userPrompt2)
+        pbar.update(1)
+        
+        with open('output2.txt','w') as f:
+            f.write(str(pdx_sdx_pcs_output))
+        print("Agent 2 Response:", pdx_sdx_pcs_output["choices"][0]["message"]["content"])
+
+        # Agent 3: Applying Coding Clinics from ICD10 New
+        systemPrompt3 = """You are a coding clinics expert. Your task is to:
+        1. Review the PDx, SDx, and PCS information provided.
+        2. Apply the appropriate guidelines from ICD-10-CM.
+        3. Suggest any necessary adjustments or corrections to the codes.
+        4. Provide a brief explanation for each adjustment, citing relevant coding guidelines."""
+
+        userPrompt3 = f"Review and refine the following diagnosis and procedure codes based on ICD-10-CM guidelines:\n\n{pdx_sdx_pcs_output['choices'][0]['message']['content']}"
+
+        altered_corrected_codes = make_api_request(0.5, "gpt-4o", 
+        "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt3, 
+        userPrompt3)
+        pbar.update(1)
+        
+        print("Agent 3 Response:", altered_corrected_codes["choices"][0]["message"]["content"])
+        with open('output3.txt','w') as f:
+            f.write(str(altered_corrected_codes))
+
+        # Agent 4: Rearranging AHA Coding Clinics
+        systemPrompt4 = """You are an AHA coding clinics specialist. Your tasks are to:
+        1. Review the adjusted PDx, SDx, and PCS information.
+        2. Apply any necessary rearrangements or further refinements based on AHA coding guidelines.
+        3. Ensure the final code sequence adheres to AHA recommendations.
+        4. Provide a final list of codes in the correct sequence with brief explanations for any changes made."""
+
+        userPrompt4 = f"Perform a final review and rearrangement of the following codes based on AHA coding guidelines:\n\n{altered_corrected_codes['choices'][0]['message']['content']}"
+
+        final_output = make_api_request(0.5, "gpt-4o", 
+        "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt4, 
+        userPrompt4)
+        pbar.update(1)
+        
+        print("Agent 4 Response:", final_output["choices"][0]["message"]["content"])
+        with open('output4.txt','w') as f:
+            f.write(str(final_output))
+
+if __name__ == "__main__":
+    run_agent_pipeline()
