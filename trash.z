@@ -91,7 +91,7 @@
                 const agentDiv = document.createElement('div');
                 agentDiv.innerHTML = `
                     <h3 class="font-bold mb-2">${agent.name} Output</h3>
-                    <div id="agentOutput${index + 1}" class="bg-gray-100 p-4 rounded min-h-[100px]"></div>
+                    <textarea id="agentOutput${index + 1}" class="w-full p-2 border rounded" rows="8" ${index === 0 ? 'readonly' : ''}></textarea>
                 `;
                 agentOutputsContainer.appendChild(agentDiv);
             });
@@ -121,25 +121,36 @@
             showLoader();
             logElement.textContent = "Processing...";
             try {
+                let previousResponse = '';
+                if (agentIndex > 0) {
+                    previousResponse = document.getElementById(`agentOutput${agentIndex}`).value;
+                }
+
                 currentRequest = axios.post('/process', {
                     clinical_notes: clinicalNotes,
                     agent_index: agentIndex + 1,
                     [`system_prompt_${agentIndex + 1}`]: document.getElementById(`systemPrompt${agentIndex + 1}`).value,
                     [`user_prompt_${agentIndex + 1}`]: document.getElementById(`userPrompt${agentIndex + 1}`).value,
-                    previous_response: agentIndex > 0 ? document.getElementById(`agentOutput${agentIndex}`).textContent : ''
+                    previous_response: previousResponse
                 });
                 
                 const response = await currentRequest;
                 if (response.data.success) {
-                    document.getElementById(`agentOutput${agentIndex + 1}`).textContent = response.data.data;
+                    document.getElementById(`agentOutput${agentIndex + 1}`).value = response.data.data;
                     logElement.textContent = `Agent ${agentIndex + 1} completed successfully. Check server logs for details.`;
                     showNotification(`Agent ${agentIndex + 1} completed successfully`);
+
+                    // Update the next agent's input if applicable
+                    if (agentIndex < agentPrompts.length - 1) {
+                        const nextUserPrompt = document.getElementById(`userPrompt${agentIndex + 2}`);
+                        nextUserPrompt.value = nextUserPrompt.value.replace(`[AGENT_${agentIndex + 1}_RESPONSE]`, response.data.data);
+                    }
                 } else {
                     throw new Error(response.data.error || 'Unknown error occurred');
                 }
             } catch (error) {
                 console.error('Error processing agent:', error);
-                document.getElementById(`agentOutput${agentIndex + 1}`).textContent = 'Error processing agent';
+                document.getElementById(`agentOutput${agentIndex + 1}`).value = 'Error processing agent';
                 logElement.textContent = `Error processing Agent ${agentIndex + 1}. Check console for details.`;
                 showNotification(`Error: ${error.message}`, true);
             } finally {
@@ -158,7 +169,7 @@
 
             document.getElementById('clearBtn').addEventListener('click', () => {
                 document.getElementById('clinicalNotes').value = '';
-                document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.textContent = '');
+                document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.value = '');
                 document.querySelectorAll('[id^="agentLog"]').forEach(el => el.textContent = '');
             });
 
