@@ -7,6 +7,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        .agent-block {
+            border-bottom: 2px solid #4a5568;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .latest-output {
+            box-shadow: 0 0 10px 2px #48bb78;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #4a5568;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+        }
+        .copy-btn:hover {
+            background-color: #2d3748;
+        }
+        .minimize-btn, .maximize-btn {
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8">
@@ -14,7 +41,11 @@
         
         <div class="mb-6">
             <label for="clinicalNotes" class="block mb-2 font-bold">Clinical Notes:</label>
-            <textarea id="clinicalNotes" class="w-full p-2 border rounded" rows="6"></textarea>
+            <div class="relative">
+                <textarea id="clinicalNotes" class="w-full p-2 border rounded" rows="6"></textarea>
+                <i class="fas fa-compress minimize-btn"></i>
+                <i class="fas fa-expand maximize-btn hidden"></i>
+            </div>
         </div>
         
         <div class="mb-6 flex justify-center">
@@ -22,18 +53,16 @@
         </div>
 
         <div id="agentContainer" class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div id="agentInputs" class="space-y-6">
-                <!-- Agent inputs will be dynamically added here -->
-            </div>
-            <div id="agentOutputs" class="space-y-6">
-                <!-- Agent outputs will be dynamically added here -->
-            </div>
+            <!-- Agent inputs and outputs will be dynamically added here -->
         </div>
     </div>
 
     <div id="loader" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-        <button id="cancelBtn" class="absolute mt-40 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Cancel</button>
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <div id="loaderText" class="text-white text-xl font-bold"></div>
+            <button id="cancelBtn" class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Cancel</button>
+        </div>
     </div>
 
     <div id="notification" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden"></div>
@@ -64,41 +93,52 @@
 
         let currentRequest = null;
 
-        function createAgentInputs() {
-            const agentInputsContainer = document.getElementById('agentInputs');
+        function createAgentBlocks() {
+            const agentContainer = document.getElementById('agentContainer');
             agentPrompts.forEach((agent, index) => {
-                const agentDiv = document.createElement('div');
-                agentDiv.innerHTML = `
+                const agentBlock = document.createElement('div');
+                agentBlock.className = 'agent-block col-span-2';
+                agentBlock.innerHTML = `
                     <h3 class="font-bold mb-2">${agent.name}</h3>
-                    <div class="mb-2">
-                        <label class="block mb-1">System Prompt:</label>
-                        <textarea id="systemPrompt${index + 1}" class="w-full p-2 border rounded" rows="6">${agent.systemPrompt}</textarea>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="mb-2">
+                                <label class="block mb-1">System Prompt:</label>
+                                <div class="relative">
+                                    <textarea id="systemPrompt${index + 1}" class="w-full p-2 border rounded" rows="6">${agent.systemPrompt}</textarea>
+                                    <i class="fas fa-compress minimize-btn"></i>
+                                    <i class="fas fa-expand maximize-btn hidden"></i>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="block mb-1">User Prompt:</label>
+                                <div class="relative">
+                                    <textarea id="userPrompt${index + 1}" class="w-full p-2 border rounded" rows="4">${agent.userPrompt}</textarea>
+                                    <i class="fas fa-compress minimize-btn"></i>
+                                    <i class="fas fa-expand maximize-btn hidden"></i>
+                                </div>
+                            </div>
+                            <button id="submitBtn${index + 1}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit Agent ${index + 1}</button>
+                            <div id="agentLog${index + 1}" class="mt-2 text-sm text-gray-600"></div>
+                        </div>
+                        <div>
+                            <label class="block mb-1">Output:</label>
+                            <div class="relative">
+                                <textarea id="agentOutput${index + 1}" class="w-full p-2 border rounded" rows="12"></textarea>
+                                <button class="copy-btn">Copy</button>
+                                <i class="fas fa-compress minimize-btn"></i>
+                                <i class="fas fa-expand maximize-btn hidden"></i>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <label class="block mb-1">User Prompt:</label>
-                        <textarea id="userPrompt${index + 1}" class="w-full p-2 border rounded" rows="4">${agent.userPrompt}</textarea>
-                    </div>
-                    <button id="submitBtn${index + 1}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit Agent ${index + 1}</button>
-                    <div id="agentLog${index + 1}" class="mt-2 text-sm text-gray-600"></div>
                 `;
-                agentInputsContainer.appendChild(agentDiv);
+                agentContainer.appendChild(agentBlock);
             });
         }
 
-        function createAgentOutputs() {
-            const agentOutputsContainer = document.getElementById('agentOutputs');
-            agentPrompts.forEach((agent, index) => {
-                const agentDiv = document.createElement('div');
-                agentDiv.innerHTML = `
-                    <h3 class="font-bold mb-2">${agent.name} Output</h3>
-                    <textarea id="agentOutput${index + 1}" class="w-full p-2 border rounded" rows="8"></textarea>
-                `;
-                agentOutputsContainer.appendChild(agentDiv);
-            });
-        }
-
-        function showLoader() {
+        function showLoader(agentIndex) {
             document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('loaderText').textContent = `Processing Agent ${agentIndex + 1}...`;
         }
 
         function hideLoader() {
@@ -118,7 +158,7 @@
         async function processAgent(agentIndex) {
             const clinicalNotes = document.getElementById('clinicalNotes').value;
             const logElement = document.getElementById(`agentLog${agentIndex + 1}`);
-            showLoader();
+            showLoader(agentIndex);
             logElement.textContent = "Processing...";
             try {
                 let previousResponse = '';
@@ -142,7 +182,9 @@
                 
                 const response = await currentRequest;
                 if (response.data.success) {
-                    document.getElementById(`agentOutput${agentIndex + 1}`).value = response.data.data;
+                    const outputElement = document.getElementById(`agentOutput${agentIndex + 1}`);
+                    outputElement.value = response.data.data;
+                    outputElement.classList.add('latest-output');
                     logElement.textContent = `Agent ${agentIndex + 1} completed successfully. Check server logs for details.`;
                     showNotification(`Agent ${agentIndex + 1} completed successfully`);
 
@@ -151,6 +193,13 @@
                         const nextUserPrompt = document.getElementById(`userPrompt${agentIndex + 2}`);
                         nextUserPrompt.value = nextUserPrompt.value.replace(`[AGENT_${agentIndex + 1}_RESPONSE]`, response.data.data);
                     }
+
+                    // Remove 'latest-output' class from previous outputs
+                    document.querySelectorAll('.latest-output').forEach(el => {
+                        if (el !== outputElement) {
+                            el.classList.remove('latest-output');
+                        }
+                    });
                 } else {
                     throw new Error(response.data.error || 'Unknown error occurred');
                 }
@@ -165,17 +214,17 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            createAgentInputs();
-            createAgentOutputs();
-
+        function setupEventListeners() {
             agentPrompts.forEach((_, index) => {
                 document.getElementById(`submitBtn${index + 1}`).addEventListener('click', () => processAgent(index));
             });
 
             document.getElementById('clearBtn').addEventListener('click', () => {
                 document.getElementById('clinicalNotes').value = '';
-                document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.value = '');
+                document.querySelectorAll('[id^="agentOutput"]').forEach(el => {
+                    el.value = '';
+                    el.classList.remove('latest-output');
+                });
                 document.querySelectorAll('[id^="agentLog"]').forEach(el => el.textContent = '');
             });
 
@@ -186,7 +235,16 @@
                     showNotification('Operation canceled', true);
                 }
             });
-        });
-    </script>
-</body>
-</html>
+
+            // Setup copy buttons
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const textArea = this.parentElement.querySelector('textarea');
+                    textArea.select();
+                    document.execCommand('copy');
+                    showNotification('Copied to clipboard!');
+                });
+            });
+
+            // Setup minimize/maximize buttons
+            document.querySelectorAll('.minimize-btn, .maximize-btn').forEach(btn => {
