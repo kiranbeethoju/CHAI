@@ -17,9 +17,8 @@
             <textarea id="clinicalNotes" class="w-full p-2 border rounded" rows="6"></textarea>
         </div>
         
-        <div class="mb-6 flex justify-center space-x-4">
-            <button id="submitBtn" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit</button>
-            <button id="clearBtn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Clear</button>
+        <div class="mb-6 flex justify-center">
+            <button id="clearBtn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Clear All</button>
         </div>
 
         <div id="agentContainer" class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -72,10 +71,11 @@
                         <label class="block mb-1">System Prompt:</label>
                         <textarea id="systemPrompt${index + 1}" class="w-full p-2 border rounded" rows="6">${agent.systemPrompt}</textarea>
                     </div>
-                    <div>
+                    <div class="mb-2">
                         <label class="block mb-1">User Prompt:</label>
                         <textarea id="userPrompt${index + 1}" class="w-full p-2 border rounded" rows="4">${agent.userPrompt}</textarea>
                     </div>
+                    <button id="submitBtn${index + 1}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit Agent ${index + 1}</button>
                 `;
                 agentInputsContainer.appendChild(agentDiv);
             });
@@ -110,27 +110,24 @@
             }, 3000);
         }
 
-        async function processAgents() {
+        async function processAgent(agentIndex) {
             const clinicalNotes = document.getElementById('clinicalNotes').value;
-            
-            for (let i = 0; i < agentPrompts.length; i++) {
-                showLoader();
-                try {
-                    const response = await axios.post('/process', {
-                        clinical_notes: clinicalNotes,
-                        system_prompt_1: document.getElementById(`systemPrompt${i + 1}`).value,
-                        user_prompt_1: document.getElementById(`userPrompt${i + 1}`).value
-                            .replace('[CLINICAL_NOTES]', clinicalNotes)
-                            .replace(`[AGENT_${i}_RESPONSE]`, i > 0 ? document.getElementById(`agentOutput${i}`).textContent : '')
-                    });
-                    document.getElementById(`agentOutput${i + 1}`).textContent = response.data[0];
-                    showNotification(`Agent ${i + 1} completed successfully`);
-                } catch (error) {
-                    console.error('Error processing agent:', error);
-                    document.getElementById(`agentOutput${i + 1}`).textContent = 'Error processing agent';
-                } finally {
-                    hideLoader();
-                }
+            showLoader();
+            try {
+                const response = await axios.post('/process', {
+                    clinical_notes: clinicalNotes,
+                    system_prompt_1: document.getElementById(`systemPrompt${agentIndex + 1}`).value,
+                    user_prompt_1: document.getElementById(`userPrompt${agentIndex + 1}`).value
+                        .replace('[CLINICAL_NOTES]', clinicalNotes)
+                        .replace(`[AGENT_${agentIndex}_RESPONSE]`, agentIndex > 0 ? document.getElementById(`agentOutput${agentIndex}`).textContent : '')
+                });
+                document.getElementById(`agentOutput${agentIndex + 1}`).textContent = response.data[0];
+                showNotification(`Agent ${agentIndex + 1} completed successfully`);
+            } catch (error) {
+                console.error('Error processing agent:', error);
+                document.getElementById(`agentOutput${agentIndex + 1}`).textContent = 'Error processing agent';
+            } finally {
+                hideLoader();
             }
         }
 
@@ -138,7 +135,10 @@
             createAgentInputs();
             createAgentOutputs();
 
-            document.getElementById('submitBtn').addEventListener('click', processAgents);
+            agentPrompts.forEach((_, index) => {
+                document.getElementById(`submitBtn${index + 1}`).addEventListener('click', () => processAgent(index));
+            });
+
             document.getElementById('clearBtn').addEventListener('click', () => {
                 document.getElementById('clinicalNotes').value = '';
                 document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.textContent = '');
