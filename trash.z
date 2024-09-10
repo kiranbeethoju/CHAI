@@ -1,66 +1,155 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-import requests
-import os
-from dotenv import load_dotenv
-import logging
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Medical Coding Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">Interactive Medical Coding Interface</h1>
+        
+        <div class="mb-6">
+            <label for="clinicalNotes" class="block mb-2 font-bold">Clinical Notes:</label>
+            <textarea id="clinicalNotes" class="w-full p-2 border rounded" rows="6"></textarea>
+        </div>
+        
+        <div class="mb-6 flex justify-center">
+            <button id="clearBtn" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Clear All</button>
+        </div>
 
-load_dotenv()
+        <div id="agentContainer" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div id="agentInputs" class="space-y-6">
+                <!-- Agent inputs will be dynamically added here -->
+            </div>
+            <div id="agentOutputs" class="space-y-6">
+                <!-- Agent outputs will be dynamically added here -->
+            </div>
+        </div>
+    </div>
 
-app = Flask(__name__, static_folder='static')
-CORS(app)
+    <div id="loader" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+    <div id="notification" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg hidden"></div>
 
-API_KEY = os.getenv("OPENAI_API_KEY")
-API_URL = "https://api.openai.com/v1/chat/completions"
+    <script>
+        const agentPrompts = [
+            {
+                name: "Agent 1: DX Extraction",
+                systemPrompt: "You are an expert medical coder specializing in ICD-10-CM diagnosis extraction. Your task is to carefully analyze clinical notes and extract all relevant diagnoses, both explicitly stated and implied. Please list these diagnoses in order of significance, starting with the principal diagnosis (the condition that occasioned the admission) followed by any secondary diagnoses or comorbidities. For each diagnosis, provide the ICD-10-CM code if you are certain about it. If you're unsure about the exact code, provide the category or general area of the ICD-10-CM where the code might be found. Remember to consider any chronic conditions mentioned, as well as any complications or sequelae of the principal diagnosis. Your output should be clear, concise, and formatted for easy reading.",
+                userPrompt: "Based on the following clinical notes, please extract and list all relevant diagnoses, starting with the principal diagnosis. Provide ICD-10-CM codes where you're certain, and general categories where you're not. Here are the clinical notes:\n\n[CLINICAL_NOTES]"
+            },
+            {
+                name: "Agent 2: PDx-SDx-PCS Determination",
+                systemPrompt: "You are an advanced medical coding expert with deep knowledge of ICD-10-CM and ICD-10-PCS. Your task is to analyze the extracted diagnoses and determine the Principal Diagnosis (PDx), Secondary Diagnoses (SDx), and any procedures (PCS) that should be coded. Use your expertise to identify the condition that occasioned the admission as the PDx. List all relevant secondary diagnoses, including comorbidities and complications. If any procedures are mentioned or implied, list them with their corresponding ICD-10-PCS codes if you're certain, or describe them if you're unsure of the exact code. Your response should be well-structured, clearly differentiating between PDx, SDx, and PCS codes.",
+                userPrompt: "Based on the following extracted diagnoses, please determine the Principal Diagnosis (PDx), list all relevant Secondary Diagnoses (SDx), and identify any procedures (PCS) that should be coded. Provide ICD-10-CM and ICD-10-PCS codes where you're certain, and descriptions where you're not. Here are the extracted diagnoses:\n\n[AGENT_1_RESPONSE]"
+            },
+            {
+                name: "Agent 3: Applying Coding Clinics",
+                systemPrompt: "You are a highly specialized medical coding expert with comprehensive knowledge of ICD-10-CM and ICD-10-PCS guidelines, including the latest Coding Clinic advice. Your task is to review the determined Principal Diagnosis (PDx), Secondary Diagnoses (SDx), and Procedures (PCS), and apply any relevant Coding Clinic guidelines or instructions. Pay close attention to any special coding rules, sequencing guidelines, or exceptions that might apply to these specific diagnoses and procedures. If any changes to the code selection or sequencing are necessary based on Coding Clinic advice, clearly explain the reasoning behind these changes. Your response should be detailed, citing specific Coding Clinic references where applicable.",
+                userPrompt: "Please review the following Principal Diagnosis (PDx), Secondary Diagnoses (SDx), and Procedures (PCS). Apply any relevant Coding Clinic guidelines, making necessary adjustments to code selection or sequencing. Explain any changes made, citing specific Coding Clinic references. Here are the codes to review:\n\n[AGENT_2_RESPONSE]"
+            },
+            {
+                name: "Agent 4: AHA and Custom Rules Rearrangement",
+                systemPrompt: "You are an elite medical coding specialist with extensive knowledge of both official ICD-10 guidelines and custom coding rules specific to certain healthcare systems or payers. Your task is to review the coded diagnoses and procedures after Coding Clinic guidelines have been applied, and make any final adjustments based on AHA coding guidelines and any custom rules that might apply. These custom rules might include specific sequencing requirements, the need to highlight certain conditions, or special considerations for particular diagnoses or procedures. Your goal is to ensure that the final code set is not only clinically accurate and compliant with official guidelines, but also optimized for the specific requirements of the healthcare system or payer. Clearly explain any changes you make and the reasoning behind them.",
+                userPrompt: "Please review the following diagnoses and procedures that have been coded and adjusted based on Coding Clinic guidelines. Apply any relevant AHA guidelines and consider any custom rules that might affect the final code set. Make any necessary final adjustments, explaining your reasoning for each change. Here are the codes to review:\n\n[AGENT_3_RESPONSE]"
+            }
+        ];
 
-def make_api_request(system_prompt, user_prompt):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {API_KEY}"
-    }
-    payload = {
-        "model": "gpt-4",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        "temperature": 0.7,
-        "max_tokens": 2000
-    }
-    response = requests.post(API_URL, headers=headers, json=payload)
-    return response.json()["choices"][0]["message"]["content"]
+        function createAgentInputs() {
+            const agentInputsContainer = document.getElementById('agentInputs');
+            agentPrompts.forEach((agent, index) => {
+                const agentDiv = document.createElement('div');
+                agentDiv.innerHTML = `
+                    <h3 class="font-bold mb-2">${agent.name}</h3>
+                    <div class="mb-2">
+                        <label class="block mb-1">System Prompt:</label>
+                        <textarea id="systemPrompt${index + 1}" class="w-full p-2 border rounded" rows="6">${agent.systemPrompt}</textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="block mb-1">User Prompt:</label>
+                        <textarea id="userPrompt${index + 1}" class="w-full p-2 border rounded" rows="4">${agent.userPrompt}</textarea>
+                    </div>
+                    <button id="submitBtn${index + 1}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Submit Agent ${index + 1}</button>
+                    <div id="agentLog${index + 1}" class="mt-2 text-sm text-gray-600"></div>
+                `;
+                agentInputsContainer.appendChild(agentDiv);
+            });
+        }
 
-@app.route('/')
-def index():
-    return send_from_directory(app.static_folder, 'index.html')
+        function createAgentOutputs() {
+            const agentOutputsContainer = document.getElementById('agentOutputs');
+            agentPrompts.forEach((agent, index) => {
+                const agentDiv = document.createElement('div');
+                agentDiv.innerHTML = `
+                    <h3 class="font-bold mb-2">${agent.name} Output</h3>
+                    <div id="agentOutput${index + 1}" class="bg-gray-100 p-4 rounded min-h-[100px]"></div>
+                `;
+                agentOutputsContainer.appendChild(agentDiv);
+            });
+        }
 
-@app.route('/process', methods=['POST'])
-def process():
-    data = request.json
-    clinical_notes = data['clinical_notes']
-    agent_index = data['agent_index']
-    system_prompt = data[f'system_prompt_{agent_index}']
-    user_prompt = data[f'user_prompt_{agent_index}']
+        function showLoader() {
+            document.getElementById('loader').classList.remove('hidden');
+        }
 
-    logger.info(f"Processing Agent {agent_index}")
-    logger.info(f"System Prompt: {system_prompt[:100]}...")
-    logger.info(f"User Prompt: {user_prompt[:100]}...")
+        function hideLoader() {
+            document.getElementById('loader').classList.add('hidden');
+        }
 
-    if agent_index == '1':
-        user_prompt = user_prompt.replace('[CLINICAL_NOTES]', clinical_notes)
-    else:
-        previous_response = data.get('previous_response', '')
-        user_prompt = user_prompt.replace(f'[AGENT_{int(agent_index)-1}_RESPONSE]', previous_response)
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.remove('hidden');
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
 
-    result = make_api_request(system_prompt, user_prompt)
-    
-    logger.info(f"Agent {agent_index} Response: {result[:100]}...")
-    
-    return jsonify([result])
+        async function processAgent(agentIndex) {
+            const clinicalNotes = document.getElementById('clinicalNotes').value;
+            const logElement = document.getElementById(`agentLog${agentIndex + 1}`);
+            showLoader();
+            logElement.textContent = "Processing...";
+            try {
+                const response = await axios.post('/process', {
+                    clinical_notes: clinicalNotes,
+                    agent_index: agentIndex + 1,
+                    [`system_prompt_${agentIndex + 1}`]: document.getElementById(`systemPrompt${agentIndex + 1}`).value,
+                    [`user_prompt_${agentIndex + 1}`]: document.getElementById(`userPrompt${agentIndex + 1}`).value,
+                    previous_response: agentIndex > 0 ? document.getElementById(`agentOutput${agentIndex}`).textContent : ''
+                });
+                document.getElementById(`agentOutput${agentIndex + 1}`).textContent = response.data[0];
+                logElement.textContent = `Agent ${agentIndex + 1} completed successfully. Check server logs for details.`;
+                showNotification(`Agent ${agentIndex + 1} completed successfully`);
+            } catch (error) {
+                console.error('Error processing agent:', error);
+                document.getElementById(`agentOutput${agentIndex + 1}`).textContent = 'Error processing agent';
+                logElement.textContent = `Error processing Agent ${agentIndex + 1}. Check console for details.`;
+            } finally {
+                hideLoader();
+            }
+        }
 
-if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=8001)
+        document.addEventListener('DOMContentLoaded', () => {
+            createAgentInputs();
+            createAgentOutputs();
+
+            agentPrompts.forEach((_, index) => {
+                document.getElementById(`submitBtn${index + 1}`).addEventListener('click', () => processAgent(index));
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', () => {
+                document.getElementById('clinicalNotes').value = '';
+                document.querySelectorAll('[id^="agentOutput"]').forEach(el => el.textContent = '');
+                document.querySelectorAll('[id^="agentLog"]').forEach(el => el.textContent = '');
+            });
+        });
+    </script>
+</body>
+</html>
