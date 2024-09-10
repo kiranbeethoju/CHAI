@@ -20,7 +20,7 @@ def make_api_request(temp, model_name, url, systemPrompt, userPrompt):
         ],
         "temperature": temp,
         "top_p": 0.95,
-        "max_tokens": 3057
+        "max_tokens": 4000
     }
     try:
         response = requests.post(url, headers=headers, json=payload)
@@ -32,22 +32,31 @@ def make_api_request(temp, model_name, url, systemPrompt, userPrompt):
     return response_data
 
 def run_agent_pipeline():
-    # Agent 1: DX Extraction with Reference Lines
-    systemPrompt1 = """You are an expert ICD extraction agent. Your task is to:
-    1. Identify positive/abnormal diseases or conditions from the given clinical notes.
-    2. Extract reference lines that support these findings.
-    3. Provide relevant surrounding context for each condition.
-    4. Format your response as a structured list of findings, each with its supporting reference and context."""
+    # Agent 1: DX Extraction with Reference Lines and Special Focus
+    systemPrompt1 = """You are an expert ICD extraction agent. Your tasks are:
+    1. Carefully analyze the provided clinical notes, which may be extensive.
+    2. Identify all positive/abnormal diseases or conditions.
+    3. Pay special attention to trauma and sepsis. If these are suspected, positive, or abnormal, they should be considered as potential primary diagnoses (PDx).
+    4. Extract exact reference lines that support each finding.
+    5. Provide relevant surrounding context for each condition.
+    6. Format your response as a structured list of findings, each with its supporting reference and context.
+    7. Clearly indicate if trauma or sepsis are identified, and explain why they might be considered as PDx.
+    8. Do not make assumptions beyond what's explicitly stated in the notes. If information is ambiguous or missing, state this clearly.
+    """
 
-    userPrompt1 = """Analyze the following clinical note and extract key medical information:
+    userPrompt1 = """Analyze the following clinical note, paying special attention to any indications of trauma or sepsis:
 
-    History of Present Illness
-    H&p was written by medical student under CC: Fatigue and Vomiting
-    patient is a 64 y.o. female with PMH of CKD on dialysis (MWF), multiple myeloma, and HTN who presents with 3 days of dizziness, vomiting, and abdominal discomfort. Patient was discharged from St Hospital on Sunday. The patient daughter states that the patient started feeling dizzy later that night. They stated that th patient has reduced her diet to little to not sodium and last night on the 20th the patient had 4-5 episode of emesis. She describes the emesis as a small amount of clear white fluid with no food or blood. The patient has taken ondansetron without improvement of her nausea.  Patient denies any chest pain or SOB.  PMH as above
-    FH: Colon Ca in sister and lung ca in mother"""
+    [Insert clinical notes here]
+
+    Remember:
+    - Focus on extracting factual information without inference.
+    - Highlight any mentions or indications of trauma or sepsis.
+    - Provide exact quotes for all significant findings.
+    - If the note is extensive, ensure you've thoroughly examined all sections before concluding your analysis.
+    """
 
     with tqdm(total=4, desc="Running Agent Pipeline", unit="step") as pbar:
-        agentResponse1 = make_api_request(0.5, "gpt-4o", 
+        agentResponse1 = make_api_request(0.3, "gpt-4o", 
         "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt1, 
         userPrompt1)
         pbar.update(1)
@@ -58,15 +67,27 @@ def run_agent_pipeline():
 
         # Agent 2: Context with Reference Lines and Entities, PDx-SDx Prompt
         systemPrompt2 = """You are a specialist agent tasked with:
-        1. Reviewing the extracted information from Agent 1.
-        2. Identifying the primary diagnosis (PDx) based on the chief complaint and presenting symptoms.
+        1. Thoroughly reviewing the extracted information from Agent 1.
+        2. Identifying the primary diagnosis (PDx) based on the chief complaint, presenting symptoms, and any highlighted conditions (especially trauma or sepsis).
         3. Listing secondary diagnoses (SDx) in order of importance to the current encounter.
         4. Suggesting a primary procedure code (PCS) if applicable.
-        5. Providing a brief rationale for each diagnosis and procedure code selection."""
+        5. Providing a detailed rationale for each diagnosis and procedure code selection.
+        6. Ensuring all decisions are based solely on the information provided, without making assumptions.
+        7. Clearly stating if there's insufficient information to make a definitive determination.
+        """
 
-        userPrompt2 = f"Based on the following extracted information, determine the PDx, SDx, and PCS:\n\n{agentResponse1['choices'][0]['message']['content']}"
+        userPrompt2 = f"""Based on the following extracted information, determine the PDx, SDx, and PCS:
 
-        pdx_sdx_pcs_output = make_api_request(0.5, "gpt-4o", 
+        {agentResponse1['choices'][0]['message']['content']}
+
+        Guidelines:
+        - Consider trauma or sepsis as potential PDx if they were identified in the extraction.
+        - Rank secondary diagnoses based on their impact on patient care for this encounter.
+        - Provide clear reasoning for your PDx selection, especially if choosing between multiple significant conditions.
+        - If suggesting a PCS, explain why it's necessary based on the available information.
+        """
+
+        pdx_sdx_pcs_output = make_api_request(0.3, "gpt-4o", 
         "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt2, 
         userPrompt2)
         pbar.update(1)
@@ -76,15 +97,32 @@ def run_agent_pipeline():
         print("Agent 2 Response:", pdx_sdx_pcs_output["choices"][0]["message"]["content"])
 
         # Agent 3: Applying Coding Clinics from ICD10 New
-        systemPrompt3 = """You are a coding clinics expert. Your task is to:
+        systemPrompt3 = """You are a coding clinics expert with deep knowledge of ICD-10-CM guidelines and coding clinics. Your tasks are:
         1. Review the PDx, SDx, and PCS information provided.
-        2. Apply the appropriate guidelines from ICD-10-CM.
+        2. Apply the appropriate guidelines from ICD-10-CM and relevant coding clinics.
         3. Suggest any necessary adjustments or corrections to the codes.
-        4. Provide a brief explanation for each adjustment, citing relevant coding guidelines."""
+        4. Provide a detailed explanation for each adjustment, citing relevant coding guidelines and clinics.
+        5. Intelligently handle coding clinic conflicts by:
+           a. Identifying any contradictions between different coding clinics or between clinics and general guidelines.
+           b. Explaining the nature of the conflict.
+           c. Recommending the most appropriate approach based on the most recent guidance or the guidance that best fits the specific clinical scenario.
+           d. Clearly stating your reasoning for choosing one approach over another in cases of conflict.
+        6. Ensure all code selections and sequences adhere to the latest ICD-10-CM guidelines and coding clinic advice.
+        7. If faced with ambiguity, explain the different possible interpretations and your recommended approach.
+        """
 
-        userPrompt3 = f"Review and refine the following diagnosis and procedure codes based on ICD-10-CM guidelines:\n\n{pdx_sdx_pcs_output['choices'][0]['message']['content']}"
+        userPrompt3 = f"""Review and refine the following diagnosis and procedure codes based on ICD-10-CM guidelines and coding clinics:
 
-        altered_corrected_codes = make_api_request(0.5, "gpt-4o", 
+        {pdx_sdx_pcs_output['choices'][0]['message']['content']}
+
+        Guidelines:
+        - Apply all relevant ICD-10-CM guidelines and coding clinic advice.
+        - Pay special attention to any potential conflicts between different coding clinics or between clinics and general guidelines.
+        - Provide detailed explanations for any changes, citing specific guidelines or coding clinics.
+        - If you encounter any ambiguities or conflicts, explain them clearly and provide your recommended approach with reasoning.
+        """
+
+        altered_corrected_codes = make_api_request(0.3, "gpt-4o", 
         "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt3, 
         userPrompt3)
         pbar.update(1)
@@ -93,16 +131,38 @@ def run_agent_pipeline():
         with open('output3.txt','w') as f:
             f.write(str(altered_corrected_codes))
 
-        # Agent 4: Rearranging AHA Coding Clinics
-        systemPrompt4 = """You are an AHA coding clinics specialist. Your tasks are to:
+        # Agent 4: Rearranging based on AHA Coding Clinics and Custom Rules
+        systemPrompt4 = """You are an AHA coding clinics specialist with expertise in code sequencing. Your tasks are:
         1. Review the adjusted PDx, SDx, and PCS information.
-        2. Apply any necessary rearrangements or further refinements based on AHA coding guidelines.
-        3. Ensure the final code sequence adheres to AHA recommendations.
-        4. Provide a final list of codes in the correct sequence with brief explanations for any changes made."""
+        2. Strictly rearrange the PDx and SDx based on AHA coding guidelines and provided custom rules.
+        3. Ensure the final code sequence adheres to:
+           a. Official AHA recommendations
+           b. Custom rules provided (which are extensions of AHA guidelines)
+        4. Provide a final list of codes in the correct sequence.
+        5. For each rearrangement or change in sequencing, provide:
+           a. The specific AHA guideline or custom rule applied
+           b. A clear explanation of why this rule takes precedence in this case
+        6. If there are any conflicts between AHA guidelines and custom rules, explain the conflict and justify your chosen approach.
+        7. Ensure that the rationale for the final sequence is clear, especially for the selection and ordering of the PDx and major SDx codes.
+        """
 
-        userPrompt4 = f"Perform a final review and rearrangement of the following codes based on AHA coding guidelines:\n\n{altered_corrected_codes['choices'][0]['message']['content']}"
+        userPrompt4 = f"""Perform a final review and rearrangement of the following codes based strictly on AHA coding guidelines and provided custom rules:
 
-        final_output = make_api_request(0.5, "gpt-4o", 
+        {altered_corrected_codes['choices'][0]['message']['content']}
+
+        Custom Rules (extensions of AHA guidelines):
+        1. If trauma and sepsis are both present, trauma takes precedence as PDx unless sepsis is explicitly documented as the reason for admission.
+        2. Chronic conditions should be sequenced after acute conditions unless they directly impact the current treatment plan.
+        3. When multiple related conditions are present, code the underlying condition first if it's actively being treated.
+
+        Guidelines:
+        - Strictly adhere to AHA guidelines and the provided custom rules for sequencing.
+        - Provide a clear explanation for each sequencing decision, citing the specific guideline or rule applied.
+        - If any conflicts arise between AHA guidelines and custom rules, explain the conflict and your resolution.
+        - Ensure the final code list is in the correct sequence with PDx clearly identified.
+        """
+
+        final_output = make_api_request(0.3, "gpt-4o", 
         "https://phmiazuregpttest001.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-02-15-preview", systemPrompt4, 
         userPrompt4)
         pbar.update(1)
