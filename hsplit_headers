@@ -1,0 +1,49 @@
+import re
+
+def e_sections(headers, note):
+    # Preprocess headers
+    processed_headers = [h.strip().lower() for h in headers if h.strip()]
+    
+    # Create a regex pattern for matching headers, including abbreviations
+    header_pattern = r'(?:^|\n)(' + '|'.join(map(re.escape, processed_headers)) + r')[:.\s]*(?:\n|$)'
+    
+    result = []
+    matches = list(re.finditer(header_pattern, note, re.IGNORECASE | re.MULTILINE))
+
+    # Handle text before the first recognized header
+    if matches and matches[0].start() > 0:
+        initial_content = note[:matches[0].start()].strip()
+        if initial_content:
+            result.append({
+                "header_name": "default_header_0",
+                "para": initial_content
+            })
+
+    for i, match in enumerate(matches):
+        header = match.group(1).strip().lower()
+        start = match.end()
+        end = matches[i+1].start() if i+1 < len(matches) else len(note)
+        
+        content = note[start:end].strip()
+        
+        if content:
+            # Map abbreviated headers to full headers
+            full_header = next((h for h in processed_headers if h.lower() == header or h.lower().startswith(header)), header)
+            result.append({
+                "header_name": full_header,
+                "para": content
+            })
+
+    return result
+
+# Example usage
+headers = """
+""".split("\n")
+
+note = """
+
+"""
+
+result = esections(headers, note)
+for cnt, item in enumerate(result):
+    print(f"{cnt}, {item['header_name']}:\n{item['para']}\n")
