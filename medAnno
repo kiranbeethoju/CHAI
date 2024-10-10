@@ -1,0 +1,143 @@
+import numpy as np
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+from sentence_transformers import SentenceTransformer
+
+# Initialize the embedding model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Initialize in-memory Qdrant client
+qdrant_client = QdrantClient(":memory:")
+
+# Create a collection for SNOMED CT codes
+qdrant_client.recreate_collection(
+    collection_name="snomed_ct",
+    vectors_config=models.VectorParams(size=model.get_sentence_embedding_dimension(), distance=models.Distance.COSINE),
+)
+
+# Sample SNOMED CT data
+snomed_ct_data = [
+    {"text": "alcohol negative", "code": "160573003", "description": "Does not consume alcohol"},
+    {"text": "no alcohol abuse", "code": "105543001", "description": "Non-abuser of alcohol"},
+    {"text": "diabetes mellitus", "code": "73211009", "description": "Diabetes mellitus"},
+    {"text": "type 2 diabetes mellitus", "code": "44054006", "description": "Type II diabetes mellitus"},
+    {"text": "left-sided weakness", "code": "248270009", "description": "Hemiparesis of left side"},
+    {"text": "severe headache", "code": "25064002", "description": "Severe headache"},
+]
+
+# Function to add data to Qdrant
+def add_to_qdrant(data):
+    points = []
+    for idx, item in enumerate(data):
+        vector = model.encode(item['text']).tolist()
+        points.append(models.PointStruct(
+            id=idx,
+            vector=vector,
+            payload={"code": item['code'], "description": item['description']}
+        ))
+    qdrant_client.upsert(collection_name="snomed_ct", points=points)
+
+# Add data to Qdrant
+add_to_qdrant(snomed_ct_data)
+
+def map_to_snomed(dx):
+    """
+    Map a diagnosis to its SNOMED code and description using vector similarity.
+    """
+    query_vector = model.encode(dx.lower()).tolist()
+    search_result = qdrant_client.search(
+        collection_name="snomed_ct",
+        query_vector=query_vector,
+        limit=1
+    )
+    if search_result:
+        return search_result[0].payload
+    else:
+        return {"code": "Unknown", "description": "Unknown diagnosis"}
+
+# Sample inputs from GATENLP and CE3
+GATENLP_data = [
+    {"dx": "alcohol negative", "history": False, "status": "Negative"},
+    {"dx": "diabetes mellitus", "history": True, "status": "Positive"},
+]
+
+CE3_data = [
+    {"dx": "alcohol abuse", "history": False, "status": "Negative"},
+]
+
+def compare_entities(gate_entity, ce3_entity):
+    """
+    Compare two entities and determine which one is more meaningful.
+    """
+    # Map diagnoses to SNOMED codes
+    gate_snomed = map_to_snomed(gate_entity['dx'])
+    ce3_snomed = map_to_snomed(ce3_entity['dx'])
+
+    # Criteria for meaningfulness
+    gate_specificity = len(gate_snomed['description'])
+    ce3_specificity = len(ce3_snomed['description'])
+
+    # Compare specificity
+    if ce3_specificity > gate_specificity:
+        more_meaningful = "CE3"
+    elif gate_specificity > ce3_specificity:
+        more_meaningful = "GATENLP"
+    else:
+        more_meaningful = "Equal"
+
+    # Prepare the comparison result
+    comparison_result = {
+        "GATENLP": {
+            "dx": gate_entity['dx'],
+            "code": gate_snomed['code'],
+            "description": gate_snomed['description'],
+            "history": gate_entity['history'],
+            "status": gate_entity['status']
+        },
+        "CE3": {
+            "dx": ce3_entity['dx'],
+            "code": ce3_snomed['code'],
+            "description": ce3_snomed['description'],
+            "history": ce3_entity['history'],
+            "status": ce3_entity['status']
+        },
+        "more_meaningful": more_meaningful
+    }
+
+    return comparison_result
+
+def process_entities(gatenlp_data, ce3_data):
+    """
+    Process and compare entities from GATENLP and CE3.
+    """
+    results = []
+
+    # Assuming both lists are aligned for comparison
+    for gate_entity, ce3_entity in zip(gatenlp_data, ce3_data):
+        comparison = compare_entities(gate_entity, ce3_entity)
+        results.append(comparison)
+
+    return results
+
+# Run the comparison
+comparison_results = process_entities(GATENLP_data, CE3_data)
+
+# Present the results
+for idx, result in enumerate(comparison_results):
+    print(f"--- Comparison {idx + 1} ---")
+    print("GATENLP Extraction:")
+    print(f"  Diagnosis: {result['GATENLP']['dx']}")
+    print(f"  SNOMED Code: {result['GATENLP']['code']}")
+    print(f"  Description: {result['GATENLP']['description']}")
+    print(f"  History: {result['GATENLP']['history']}")
+    print(f"  Status: {result['GATENLP']['status']}\n")
+
+    print("CE3 Extraction:")
+    print(f"  Diagnosis: {result['CE3']['dx']}")
+    print(f"  SNOMED Code: {result['CE3']['code']}")
+    print(f"  Description: {result['CE3']['description']}")
+    print(f"  History: {result['CE3']['history']}")
+    print(f"  Status: {result['CE3']['status']}\n")
+
+    print(f"More Meaningful Extraction: {result['more_meaningful']}")
+    print("\n")
