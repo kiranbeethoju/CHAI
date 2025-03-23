@@ -1,58 +1,43 @@
 #!/bin/bash
 
-# Install required dependencies if not already installed
-if ! command -v python3 &> /dev/null; then
-    echo "Python3 is required. Please install it first."
-    exit 1
-fi
+# Shell color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
 
-# Create and activate a Python virtual environment for colorama
-VENV_DIR="/tmp/script_venv"
-if [ ! -d "$VENV_DIR" ]; then
-    python3 -m venv "$VENV_DIR"
-    "$VENV_DIR/bin/pip" install colorama
-fi
-
-# Python script for colored logging
-cat > /tmp/colorlog.py << 'EOF'
-import sys
-from colorama import init, Fore, Style
-
-# Initialize colorama
-init()
-
-# Define log levels and their colors
-LOG_LEVELS = {
-    "INFO": Fore.GREEN,
-    "WARNING": Fore.YELLOW,
-    "ERROR": Fore.RED,
-    "SUCCESS": Fore.CYAN,
-    "COMMAND": Fore.BLUE,
-    "HEADER": Fore.MAGENTA
-}
-
-def log(level, message):
-    timestamp = ""
-    if level != "HEADER":
-        from datetime import datetime
-        timestamp = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-    
-    if level in LOG_LEVELS:
-        color = LOG_LEVELS[level]
-        print(f"{color}{timestamp}{level}: {message}{Style.RESET_ALL}")
-    else:
-        print(f"{timestamp}{level}: {message}")
-
-if __name__ == "__main__":
-    if len(sys.argv) >= 3:
-        log(sys.argv[1], " ".join(sys.argv[2:]))
-    else:
-        print(f"Usage: {sys.argv[0]} LOG_LEVEL MESSAGE")
-EOF
-
-# Function to log messages with color
+# Function to log messages with timestamp and color
 log() {
-    "$VENV_DIR/bin/python3" /tmp/colorlog.py "$@"
+    local level=$1
+    local message=$2
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    
+    case $level in
+        "INFO")
+            echo -e "${GREEN}[${timestamp}] INFO: ${message}${NC}"
+            ;;
+        "WARNING")
+            echo -e "${YELLOW}[${timestamp}] WARNING: ${message}${NC}"
+            ;;
+        "ERROR")
+            echo -e "${RED}[${timestamp}] ERROR: ${message}${NC}"
+            ;;
+        "SUCCESS")
+            echo -e "${CYAN}[${timestamp}] SUCCESS: ${message}${NC}"
+            ;;
+        "COMMAND")
+            echo -e "${BLUE}[${timestamp}] COMMAND: ${message}${NC}"
+            ;;
+        "HEADER")
+            echo -e "${MAGENTA}${message}${NC}"
+            ;;
+        *)
+            echo -e "[${timestamp}] ${level}: ${message}"
+            ;;
+    esac
 }
 
 # Print script header
@@ -158,7 +143,7 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
         
         log "INFO" "Waiting for the VM to be ready... (30s)"
         for i in {1..30}; do
-            echo -n "."
+            echo -ne "${YELLOW}.${NC}"
             sleep 1
         done
         echo ""
@@ -180,20 +165,26 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
         log "INFO" "Connecting to VM and installing dependencies..."
         
         if gcloud compute ssh $GCP_VM_NAME --zone $GCP_ZONE --command "
-          # Update and install dependencies
+          echo '${YELLOW}[REMOTE] Starting setup on VM...${NC}'
+          
+          echo '${YELLOW}[REMOTE] Updating package lists...${NC}'
           sudo apt update
+          
+          echo '${YELLOW}[REMOTE] Installing dependencies...${NC}'
           sudo apt install -y python3 python3-pip nginx python3-venv
           
-          # Create application directory and setup virtual environment
+          echo '${YELLOW}[REMOTE] Creating application directory...${NC}'
           mkdir -p /home/$USER/$APP_DIR
           cd /home/$USER/$APP_DIR
+          
+          echo '${YELLOW}[REMOTE] Setting up Python virtual environment...${NC}'
           python3 -m venv venv
           source venv/bin/activate
           
-          # Install Flask
+          echo '${YELLOW}[REMOTE] Installing Flask and Gunicorn...${NC}'
           pip install flask gunicorn
           
-          # Create the app.py file with a simple Flask Hello World API
+          echo '${YELLOW}[REMOTE] Creating Flask application...${NC}'
           echo \"from flask import Flask
 app = Flask(__name__)
 
@@ -204,7 +195,7 @@ def hello_world():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=$PORT)\" > app.py
           
-          # Create a systemd service file for the Flask app
+          echo '${YELLOW}[REMOTE] Creating systemd service...${NC}'
           echo \"[Unit]
 Description=Flask API Service
 After=network.target
@@ -218,12 +209,12 @@ Restart=always
 [Install]
 WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
           
-          # Enable and start the service
+          echo '${YELLOW}[REMOTE] Enabling and starting service...${NC}'
           sudo systemctl enable flask-api.service
           sudo systemctl start flask-api.service
           
-          # Configure Nginx to proxy requests to the Flask app
-          sudo rm /etc/nginx/sites-enabled/default
+          echo '${YELLOW}[REMOTE] Configuring Nginx...${NC}'
+          sudo rm -f /etc/nginx/sites-enabled/default
           echo 'server {
             listen 80;
             server_name _;
@@ -235,19 +226,20 @@ WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
             proxy_set_header Host \$host;
             proxy_cache_bypass \$http_upgrade;
             }
-          }' | sudo tee /etc/nginx/sites-available/default
+          }' | sudo tee /etc/nginx/sites-available/flask-app
           
-          sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+          sudo ln -sf /etc/nginx/sites-available/flask-app /etc/nginx/sites-enabled/
           
-          # Restart Nginx to apply changes
+          echo '${YELLOW}[REMOTE] Restarting Nginx...${NC}'
           sudo systemctl restart nginx
           
-          # Check service status
-          echo \"Service status:\"
+          echo '${YELLOW}[REMOTE] Checking service status...${NC}'
           sudo systemctl status flask-api.service | head -n 10
           
-          # Check if API is responding
+          echo '${YELLOW}[REMOTE] Testing API response...${NC}'
           curl -s http://localhost:$PORT/ || echo \"API not responding\"
+          
+          echo '${GREEN}[REMOTE] Setup completed on VM${NC}'
         "; then
             log "SUCCESS" "Flask API setup completed on $GCP_VM_NAME"
         else
@@ -255,6 +247,7 @@ WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
         fi
         
         # Get external IP for user reference
+        log "INFO" "Retrieving external IP address..."
         EXTERNAL_IP=$(gcloud compute instances describe $GCP_VM_NAME --zone=$GCP_ZONE --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
         log "SUCCESS" "Flask API deployed and running on $GCP_VM_NAME"
         log "INFO" "You can access the API at: http://$EXTERNAL_IP/"
@@ -262,8 +255,13 @@ WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
         # Test Auto-Scaling by Stressing the CPU
         log "INFO" "Testing auto-scaling by generating load (this may take some time)..."
         if gcloud compute ssh $GCP_VM_NAME --zone $GCP_ZONE --command "
+          echo '${YELLOW}[REMOTE] Installing Apache Benchmark...${NC}'
           sudo apt install -y apache2-utils
+          
+          echo '${YELLOW}[REMOTE] Running load test...${NC}'
           ab -n 1000 -c 100 http://localhost:$PORT/
+          
+          echo '${GREEN}[REMOTE] Load test completed${NC}'
         "; then
             log "SUCCESS" "Auto-scaling test completed"
         else
@@ -293,9 +291,6 @@ elif (( $(echo "$CPU_USAGE < $CPU_THRESHOLD" | bc -l) )); then
         log "INFO" "No active GCP VM to shut down."
     fi
 fi
-
-# Clean up temporary Python environment if desired
-# rm -rf "$VENV_DIR" /tmp/colorlog.py
 
 log "HEADER" "======================================================"
 log "HEADER" "                 SCRIPT COMPLETED                     "
