@@ -53,29 +53,55 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
 	    echo "Transferring data to GCP VM..."
         gcloud compute scp --recurse "$LOCAL_DATA_PATH" "$GCP_USER@$GCP_VM_NAME:$REMOTE_DATA_PATH" --zone="$GCP_ZONE"
             
-        # Step 6: Deploy the Sample Node.js Application
-	    echo "Deploying the Node.js application..."
+        # Deploy the Simple Flask API
+	    echo "Deploying the Flask API..."
 	    
 	    # SSH into the VM and run the setup commands
 	    gcloud compute ssh $GCP_VM_NAME --zone $GCP_ZONE --command "
 	      
 	      # Update and install dependencies
 	      sudo apt update
-	      sudo apt install -y nodejs npm nginx
+	      sudo apt install -y python3 python3-pip nginx python3-venv
 	      
-	      # Create application directory and install Express
-	      mkdir /home/$USER/$APP_DIR
+	      # Create application directory and setup virtual environment
+	      mkdir -p /home/$USER/$APP_DIR
 	      cd /home/$USER/$APP_DIR
-	      npm init -y
-	      npm install express
+	      python3 -m venv venv
+	      source venv/bin/activate
 	      
-	      # Create the app.js file
-	      echo \"const express = require('express'); const app = express(); const port = $PORT; app.get('/', (req, res) => { res.send('Hello, world! This is a sample app deployed on $GCP_VM_NAME.'); }); app.listen(port, () => { console.log('App listening on port ' + port); });\" > app.js
+	      # Install Flask
+	      pip install flask gunicorn
 	      
-	      # Run the application
-	      nohup node app.js &
+	      # Create the app.py file with a simple Flask Hello World API
+	      echo \"from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=$PORT)\" > app.py
 	      
-	      # Configure Nginx to proxy requests to the Node app
+	      # Create a systemd service file for the Flask app
+	      echo \"[Unit]
+Description=Flask API Service
+After=network.target
+
+[Service]
+User=$USER
+WorkingDirectory=/home/$USER/$APP_DIR
+ExecStart=/home/$USER/$APP_DIR/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:$PORT app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
+	      
+	      # Enable and start the service
+	      sudo systemctl enable flask-api.service
+	      sudo systemctl start flask-api.service
+	      
+	      # Configure Nginx to proxy requests to the Flask app
 	      sudo rm /etc/nginx/sites-enabled/default
 	      echo 'server {
 	        listen 80;
@@ -90,13 +116,15 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
 	        }
 	      }' | sudo tee /etc/nginx/sites-available/default
 	      
+	      sudo ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+	      
 	      # Restart Nginx to apply changes
 	      sudo systemctl restart nginx
 	    "
         
-	    echo "Sample application deployed and running on $GCP_VM_NAME."
+	    echo "Flask API deployed and running on $GCP_VM_NAME."
 	    
-	    # Step 7: Test Auto-Scaling by Stressing the CPU
+	    # Test Auto-Scaling by Stressing the CPU
 	    echo "Testing auto-scaling by generating load (this may take some time)..."
 	    gcloud compute ssh $GCP_VM_NAME --zone $GCP_ZONE --command "
 	      sudo apt install -y apache2-utils
