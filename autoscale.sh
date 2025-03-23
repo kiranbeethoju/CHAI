@@ -10,7 +10,7 @@ APP_DIR="myapp"
 PORT="8080"
 
 # Authenticate with GCP
-gcloud auth activate-service-account --key-file=assignment3-453515-fbe19fac364d.json
+gcloud auth activate-service-account --key-file=as3-g24ai1115-e07b4f7cb21b.json
 gcloud config set project assignment3-453515
 
 # Get CPU Usage
