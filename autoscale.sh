@@ -74,9 +74,9 @@ else
     exit 1
 fi
 
-log "COMMAND" "gcloud config set project assignment3-453515"
-gcloud config set project assignment3-453515
-log "SUCCESS" "Project set to assignment3-453515"
+log "COMMAND" "gcloud config set project as3-g24ai1115"
+gcloud config set project as3-g24ai1115
+log "SUCCESS" "Project set to as3-g24ai1115"
 
 # Get CPU Usage
 log "INFO" "Getting current CPU usage..."
@@ -85,8 +85,8 @@ log "INFO" "Current CPU Usage: $CPU_USAGE%"
 
 # Check if the VM exists in GCP
 log "INFO" "Checking if VM exists in GCP..."
-log "COMMAND" "gcloud compute instance-groups managed list-instances scaled-vm-group --zone us-central1-a"
-INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances scaled-vm-group --zone us-central1-a --format="value(name)" 2>/dev/null | head -n 1)
+log "COMMAND" "gcloud compute instance-groups managed list-instances scaled-vm-group --zone asia-south2-b"
+INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances scaled-vm-group --zone asia-south2-b --format="value(name)" 2>/dev/null | head -n 1)
 
 if [ -n "$INSTANCE_NAME" ]; then
     log "INFO" "Found existing VM: $INSTANCE_NAME"
@@ -129,8 +129,8 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
             --max-num-replicas 5 \
             --min-num-replicas 1 \
             --target-cpu-utilization 0.75 \
-            --cool-down-period 60 \
-            --zone us-central1-a; then
+            --cool-down-period 20 \
+            --zone asia-south2-b; then
             log "SUCCESS" "Autoscaling set successfully"
         else
             log "ERROR" "Failed to set autoscaling"
@@ -138,7 +138,7 @@ if (( $(echo "$CPU_USAGE > $CPU_THRESHOLD" | bc -l) )); then
         fi
         
         log "INFO" "Getting VM name..."
-        GCP_VM_NAME=$(gcloud compute instance-groups managed list-instances scaled-vm-group --zone us-central1-a --format="value(name)" | head -n 1)
+        GCP_VM_NAME=$(gcloud compute instance-groups managed list-instances scaled-vm-group --zone asia-south2-b --format="value(name)" | head -n 1)
         log "INFO" "VM created: $GCP_VM_NAME"
         
         log "INFO" "Waiting for the VM to be ready... (30s)"
@@ -280,9 +280,9 @@ WantedBy=multi-user.target\" | sudo tee /etc/systemd/system/flask-api.service
 elif (( $(echo "$CPU_USAGE < $CPU_THRESHOLD" | bc -l) )); then
     if [ -n "$INSTANCE_NAME" ]; then
         log "WARNING" "CPU usage dropped below $CPU_THRESHOLD%. Shutting down GCP VM..."
-        log "COMMAND" "gcloud compute instance-groups managed delete scaled-vm-group --zone us-central1-a"
+        log "COMMAND" "gcloud compute instance-groups managed delete scaled-vm-group --zone asia-south2-b"
         
-        if gcloud compute instance-groups managed delete scaled-vm-group --zone us-central1-a --quiet; then
+        if gcloud compute instance-groups managed delete scaled-vm-group --zone asia-south2-b --quiet; then
             log "SUCCESS" "VM group deleted successfully"
         else
             log "ERROR" "Failed to delete VM group"
