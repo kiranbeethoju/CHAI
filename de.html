@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CPT E/M MDM Grid Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #f0f0ff;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        .sidebar h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .account-list {
+            list-style: none;
+            padding: 0;
+        }
+        .account-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .account-item:hover {
+            background-color: #e4e4ff;
+        }
+        .account-item.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #f0f0ff;
+            color: #333;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .checkbox-group {
+            margin: 5px 0;
+        }
+        .checkbox-item {
+            margin-bottom: 10px;
+        }
+        .checkbox-group label {
+            display: block;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .justification {
+            margin-left: 25px;
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+            display: none;
+        }
+        .justification.has-text {
+            display: block;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-left: 3px solid #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+            text-align: center;
+            color: #666;
+        }
+        .loading.active {
+            display: block;
+        }
+        .button-group {
+            margin-top: 10px;
+        }
+        .button-group button {
+            margin-right: 10px;
+        }
+        #customDataInput {
+            width: 100%;
+            height: 150px;
+            margin-top: 10px;
+            padding: 8px;
+            font-family: monospace;
+            display: none;
+        }
+        .search-box {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .account-details {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        .reference-info {
+            display: block;
+            position: relative;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: 95%;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+            color: #333;
+        }
+        .justification-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .justification-container:hover {
+            background-color: #f5f5f5;
+        }
+        .reference-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .reference-source {
+            font-style: italic;
+            margin-bottom: 3px;
+        }
+        .reference-line {
+            background-color: #f5f5f5;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            margin-top: 5px;
+        }
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #4CAF50;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 0;
+            margin: 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .global-toggle {
+            background-color: #4CAF50;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+        .global-toggle:hover {
+            background-color: #45a049;
+        }
+        .patient-type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 5px;
+            color: white;
+        }
+        .new-patient {
+            background-color: #e74c3c;
+        }
+        .established-patient {
+            background-color: #3498db;
+        }
+        .em-code {
+            background-color: #9b59b6;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 5px;
+            color: white;
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .details-row {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar">
+            <h2>Patient Accounts</h2>
+            <input type="text" class="search-box" id="accountSearch" placeholder="Search accounts..." oninput="filterAccounts()">
+            <ul class="account-list" id="accountList">
+                <!-- Account list will be populated by JavaScript -->
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="container">
+                <div class="header">
+                    <h1>CPT E/M MDM Grid</h1>
+                    <div class="patient-info">
+                        <h3>Account: <span id="accountDisplay">---</span></h3>
+                        <h4>
+                            Patient: <span id="patientNameDisplay">---</span>
+                            <span id="patientTypeDisplay" class="patient-type-badge"></span>
+                        </h4>
+                    </div>
+                    <div class="button-group">
+                        <button onclick="calculateMdmLevel()">Calculate MDM Level</button>
+                        <button onclick="toggleCustomInput()">Edit Custom JSON</button>
+                        <button onclick="toggleAllReferences(true)" class="global-toggle">Show All References</button>
+                        <button onclick="toggleAllReferences(false)" class="global-toggle">Hide All References</button>
+                    </div>
+                    <textarea id="customDataInput" placeholder='Enter custom JSON data here... 
+Example:
+{
+  "account": "7835921648",
+  "patient": "John Smith",
+  "facility": "Mercy Medical Center, Illinois",
+  "lastVisit": "05/03/2025",
+  "patientType": "Established",
+  "emCode": "99212",
+  "selections": [
+    {
+      "id": "problems-low-1",
+      "checked": true,
+      "justification": "Patient has multiple minor problems",
+      "reference": {
+        "source": "Progress Note",
+        "page": "1",
+        "line": "5-6",
+        "text": "Patient presents with minor problems including..."
+      }
+    }
+  ]
+}'></textarea>
+                    <button id="applyCustomBtn" style="display:none;" onclick="applyCustomData()">Apply Custom Data</button>
+                </div>
+
+                <table id="grid">
+                    <thead>
+                        <tr>
+                            <th>Level of MDM</th>
+                            <th>Number and Complexity of Problems Addressed</th>
+                            <th>Amount and/or Complexity of Data to be Reviewed and Analyzed</th>
+                            <th>Risk of Complications and/or Morbidity or Mortality</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>N/A</td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-na-1"> N/A</label>
+                                        <div class="justification" id="problems-na-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-na-1"> N/A</label>
+                                        <div class="justification" id="data-na-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-na-1"> N/A</label>
+                                        <div class="justification" id="risk-na-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Straightforward</td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-minimal-1"> 1 self-limited or minor problem</label>
+                                        <div class="justification" id="problems-minimal-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-minimal-1"> Minimal or none</label>
+                                        <div class="justification" id="data-minimal-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-minimal-1"> Minimal risk from additional diagnostic testing or treatment</label>
+                                        <div class="justification" id="risk-minimal-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Low</td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-low-1"> 2 or more self-limited or minor problems</label>
+                                        <div class="justification" id="problems-low-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-low-2"> 1 stable chronic illness</label>
+                                        <div class="justification" id="problems-low-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-low-3"> 1 acute, uncomplicated illness or injury</label>
+                                        <div class="justification" id="problems-low-3-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-low-1"> Review of prior external note(s)</label>
+                                        <div class="justification" id="data-low-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-low-2"> Review of the result(s) of each unique test</label>
+                                        <div class="justification" id="data-low-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-low-3"> Ordering of each unique test</label>
+                                        <div class="justification" id="data-low-3-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-low-4"> Assessment requiring independent historian(s)</label>
+                                        <div class="justification" id="data-low-4-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-low-1"> Low risk of morbidity from additional diagnostic testing or treatment</label>
+                                        <div class="justification" id="risk-low-1-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Moderate</td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-moderate-1"> 1 or more chronic illnesses with exacerbation</label>
+                                        <div class="justification" id="problems-moderate-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-moderate-2"> 2 or more stable chronic illnesses</label>
+                                        <div class="justification" id="problems-moderate-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-moderate-3"> 1 undiagnosed new problem with uncertain prognosis</label>
+                                        <div class="justification" id="problems-moderate-3-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-moderate-4"> 1 acute illness with systemic symptoms</label>
+                                        <div class="justification" id="problems-moderate-4-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-moderate-5"> 1 acute complicated injury</label>
+                                        <div class="justification" id="problems-moderate-5-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-moderate-1"> Any combination of 3 from Category 1</label>
+                                        <div class="justification" id="data-moderate-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-moderate-2"> Independent interpretation of tests</label>
+                                        <div class="justification" id="data-moderate-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-moderate-3"> Discussion of management or test interpretation</label>
+                                        <div class="justification" id="data-moderate-3-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-moderate-1"> Prescription drug management</label>
+                                        <div class="justification" id="risk-moderate-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-moderate-2"> Decision regarding minor surgery with identified patient or procedure risk factors</label>
+                                        <div class="justification" id="risk-moderate-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-moderate-3"> Decision regarding elective major surgery without identified patient or procedure risk factors</label>
+                                        <div class="justification" id="risk-moderate-3-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-moderate-4"> Diagnosis or treatment significantly limited by social determinants of health</label>
+                                        <div class="justification" id="risk-moderate-4-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>High</td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-high-1"> 1 or more chronic illnesses with severe exacerbation</label>
+                                        <div class="justification" id="problems-high-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="problems-high-2"> 1 acute or chronic illness or injury that poses a threat to life or bodily function</label>
+                                        <div class="justification" id="problems-high-2-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-high-1"> Category 1: Any combination of 3 from the following:</label>
+                                        <div class="justification" id="data-high-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-high-2"> Category 2: Independent interpretation of tests</label>
+                                        <div class="justification" id="data-high-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="data-high-3"> Category 3: Discussion of management or test interpretation</label>
+                                        <div class="justification" id="data-high-3-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-high-1"> Drug therapy requiring intensive monitoring for toxicity</label>
+                                        <div class="justification" id="risk-high-1-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-high-2"> Decision regarding elective major surgery with identified patient or procedure risk factors</label>
+                                        <div class="justification" id="risk-high-2-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-high-3"> Decision regarding emergency major surgery</label>
+                                        <div class="justification" id="risk-high-3-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-high-4"> Decision regarding hospitalization</label>
+                                        <div class="justification" id="risk-high-4-justification"></div>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label><input type="checkbox" id="risk-high-5"> Decision not to resuscitate or to de-escalate care because of poor prognosis</label>
+                                        <div class="justification" id="risk-high-5-justification"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div id="result" class="result">
+                    <div class="result-header">
+                        <div class="result-details">
+                            <h3>Results:</h3>
+                            <div class="details-row">MDM Level: <span id="mdmLevel">---</span></div>
+                            <div class="details-row">Patient Type: <span id="resultPatientType">---</span></div>
+                        </div>
+                        <div>
+                            <span id="emCodeDisplay" class="em-code">---</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample accounts data with more varied selections and reference information
+        const accountsData = [
+            {
+                id: "7835921648",
+                patient: "John Smith",
+                lastVisit: "05/03/2025",
+                facility: "Mercy Medical Center, Illinois",
+                level: "Straightforward",
+                patientType: "Established",
+                emCode: "99212",
+                selections: [
+                    {
+                        id: "problems-minimal-1",
+                        checked: true,
+                        justification: "Patient has a mild case of seasonal allergies",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "5-6",
+                            text: "Patient presents with mild seasonal allergies, complaining of occasional sneezing and clear nasal discharge for the past week."
+                        }
+                    },
+                    {
+                        id: "data-minimal-1",
+                        checked: true,
+                        justification: "No additional data reviewed",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "12",
+                            text: "No additional tests ordered or previous results reviewed for this visit."
+                        }
+                    },
+                    {
+                        id: "risk-minimal-1",
+                        checked: true,
+                        justification: "OTC antihistamine recommended",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "1",
+                            line: "15-16",
+                            text: "Recommended over-the-counter Claritin 10mg daily as needed for allergy symptoms."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7792561437",
+                patient: "Sarah Johnson",
+                lastVisit: "05/06/2025",
+                facility: "Dallas Medical Center, Texas",
+                level: "Low",
+                patientType: "New",
+                emCode: "99203",
+                selections: [
+                    {
+                        id: "problems-low-2",
+                        checked: true,
+                        justification: "Patient has stable hypertension, well controlled with current medication",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "8-10",
+                            text: "Hypertension continues to be well controlled on current regimen of Lisinopril 10mg daily. BP today is 122/78."
+                        }
+                    },
+                    {
+                        id: "data-low-2",
+                        checked: true,
+                        justification: "Reviewed recent blood pressure readings from home monitoring",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "3-5",
+                            text: "Patient brings in home BP log showing readings between 120-130/70-80 over the past month. Reviewed log with patient."
+                        }
+                    },
+                    {
+                        id: "risk-low-1",
+                        checked: true,
+                        justification: "Continued current medication regimen with no changes",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "2",
+                            line: "12",
+                            text: "Continue Lisinopril 10mg daily. No changes to current medication regimen at this time."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7863920175",
+                patient: "Robert Williams",
+                lastVisit: "05/10/2025",
+                facility: "Paradise Valley Hospital, California",
+                level: "Moderate",
+                patientType: "Established",
+                emCode: "99214",
+                selections: [
+                    {
+                        id: "problems-moderate-2",
+                        checked: true,
+                        justification: "Patient has hypertension and type 2 diabetes, both stable on current medications",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "7-10",
+                            text: "Patient has histories of hypertension and type 2 diabetes, both currently stable on medication regimen. BP today is 128/82, HbA1c from last month was 6.8%."
+                        }
+                    },
+                    {
+                        id: "data-moderate-1",
+                        checked: true,
+                        justification: "Reviewed lab results, specialist notes, and home monitoring data",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "15-18",
+                            text: "Reviewed recent lab results including CBC, CMP, lipid panel, as well as notes from endocrinology consult last month. Also reviewed patient's glucose log showing fasting values of 90-120 mg/dL."
+                        }
+                    },
+                    {
+                        id: "risk-moderate-1",
+                        checked: true,
+                        justification: "Adjusted dosage of blood pressure medication based on recent readings",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "3",
+                            line: "5-7",
+                            text: "Increasing Amlodipine from 5mg to 7.5mg daily due to slight elevation in BP readings over past two office visits."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7901245368",
+                patient: "Emily Davis",
+                lastVisit: "05/12/2025",
+                facility: "Saint Michael's Medical Center, New Jersey",
+                level: "High",
+                patientType: "New",
+                emCode: "99205",
+                selections: [
+                    {
+                        id: "problems-high-1",
+                        checked: true,
+                        justification: "Patient has COPD with severe exacerbation requiring increased medication and monitoring",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "10-14",
+                            text: "Patient presents with acute COPD exacerbation. Reports increased dyspnea, wheezing, and productive cough for 3 days. O2 saturation 88% on room air. Lung exam reveals diffuse wheezing and crackles bilaterally."
+                        }
+                    },
+                    {
+                        id: "data-high-1",
+                        checked: true,
+                        justification: "Reviewed pulmonary function tests, chest X-ray, and oxygen saturation levels",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "5-10",
+                            text: "Reviewed today's chest X-ray showing increased infiltrates compared to previous study. PFTs from last month show FEV1 at 45% of predicted. Also reviewed home O2 monitoring log showing consistent desaturations below 90% with minimal exertion."
+                        }
+                    },
+                    {
+                        id: "risk-high-1",
+                        checked: true,
+                        justification: "Started on steroid therapy with antibiotic requiring close monitoring for adverse effects",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "2",
+                            line: "18-22",
+                            text: "Starting prednisone taper starting at 40mg daily and Levofloxacin 750mg daily for 7 days. Patient counseled on side effects including hyperglycemia, mood changes, and tendon risks. Will monitor blood glucose daily."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7854367210",
+                patient: "Michael Brown",
+                lastVisit: "05/15/2025",
+                facility: "Knapp Medical Center, Texas",
+                level: "Moderate",
+                patientType: "Established",
+                emCode: "99214",
+                selections: [
+                    {
+                        id: "problems-moderate-3",
+                        checked: true,
+                        justification: "Patient presents with unexplained weight loss and fatigue requiring further investigation",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "5-8",
+                            text: "Patient reports unintentional weight loss of 15 pounds over 3 months associated with increased fatigue. No fever, night sweats, or other localizing symptoms."
+                        }
+                    },
+                    {
+                        id: "data-moderate-2",
+                        checked: true,
+                        justification: "Independent interpretation of CBC, metabolic panel, and thyroid function tests",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "12-16",
+                            text: "I personally reviewed lab results showing mild anemia with Hgb 11.2, normal WBC and platelet counts. Chemistry panel shows mildly elevated liver enzymes with ALT 65 and AST 58. TSH normal at 2.1."
+                        }
+                    },
+                    {
+                        id: "risk-moderate-3",
+                        checked: true,
+                        justification: "Discussion of potential need for endoscopy to rule out gastrointestinal pathology",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "3",
+                            line: "7-10",
+                            text: "Discussed need for upper endoscopy to evaluate for possible GI source of anemia and weight loss. Patient understands risks including bleeding, perforation, and sedation complications."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7729834651",
+                patient: "Jessica Wilson",
+                lastVisit: "05/18/2025",
+                facility: "Garden City Hospital, Michigan",
+                level: "High",
+                patientType: "Established",
+                emCode: "99215",
+                selections: [
+                    {
+                        id: "problems-high-2",
+                        checked: true,
+                        justification: "Patient presents with suspected acute coronary syndrome and unstable angina",
+                        reference: {
+                            source: "Emergency Note",
+                            page: "1",
+                            line: "3-7",
+                            text: "Patient presents with 30 minutes of crushing substernal chest pain radiating to left arm, associated with diaphoresis and nausea. Pain began at rest and is not relieved by nitroglycerin. ECG shows 1mm ST depression in leads II, III, aVF."
+                        }
+                    },
+                    {
+                        id: "data-high-3",
+                        checked: true,
+                        justification: "Discussed case with cardiology for immediate management recommendations",
+                        reference: {
+                            source: "Emergency Note",
+                            page: "2",
+                            line: "8-10",
+                            text: "Discussed case with Dr. Rodriguez (cardiology) who recommends immediate cardiac catheterization given the clinical presentation and ECG changes."
+                        }
+                    },
+                    {
+                        id: "risk-high-4",
+                        checked: true,
+                        justification: "Decision regarding hospital admission to cardiac care unit",
+                        reference: {
+                            source: "Disposition",
+                            page: "3",
+                            line: "1-3",
+                            text: "Patient admitted to cardiac care unit for monitoring, anticoagulation, and preparation for cardiac catheterization in the morning."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7893245710",
+                patient: "Thomas Anderson",
+                lastVisit: "05/20/2025",
+                facility: "Shasta Regional Medical Center, California",
+                level: "High",
+                patientType: "New",
+                emCode: "99205",
+                selections: [
+                    {
+                        id: "problems-moderate-4",
+                        checked: true,
+                        justification: "Patient with acute pneumonia with systemic symptoms",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "6-9",
+                            text: "Patient presents with 5 days of productive cough, fever to 102.5°F, and increasing shortness of breath. Chest X-ray confirms right lower lobe consolidation consistent with pneumonia."
+                        }
+                    },
+                    {
+                        id: "data-high-2",
+                        checked: true,
+                        justification: "Personally interpreted chest X-ray showing lobar pneumonia",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "10-12",
+                            text: "I personally reviewed the chest X-ray which demonstrates right lower lobe consolidation with early parapneumonic effusion. No evidence of empyema."
+                        }
+                    },
+                    {
+                        id: "risk-high-5",
+                        checked: true,
+                        justification: "Discussion about code status and care limitations due to patient's advanced COPD",
+                        reference: {
+                            source: "Progress Note",
+                            page: "3",
+                            line: "15-20",
+                            text: "Given the patient's advanced COPD with FEV1 of 25% predicted and prior documented wishes, had extensive discussion with patient and family about code status. Patient reiterated desire for DNR/DNI status given poor pulmonary reserve."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7918034762",
+                patient: "Jennifer Martinez",
+                lastVisit: "05/22/2025",
+                facility: "St. Joseph Medical Center, Missouri",
+                level: "Moderate",
+                patientType: "New",
+                emCode: "99204",
+                selections: [
+                    {
+                        id: "problems-low-3",
+                        checked: true,
+                        justification: "Patient with acute uncomplicated UTI",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "4-5",
+                            text: "Patient presents with 2 days of dysuria, urinary frequency, and suprapubic discomfort. No fever or flank pain."
+                        }
+                    },
+                    {
+                        id: "data-low-3",
+                        checked: true,
+                        justification: "Ordered urinalysis and urine culture",
+                        reference: {
+                            source: "Progress Note",
+                            page: "2",
+                            line: "7-8",
+                            text: "Urinalysis ordered showing 50-100 WBCs, positive leukocyte esterase and nitrites. Urine culture pending."
+                        }
+                    },
+                    {
+                        id: "risk-moderate-4",
+                        checked: true,
+                        justification: "Treatment complicated by patient's homelessness and limited access to follow-up",
+                        reference: {
+                            source: "Social Work Note",
+                            page: "1",
+                            line: "3-8",
+                            text: "Patient currently experiencing homelessness, staying at various shelters. Has difficulty maintaining medication schedule and accessing consistent healthcare. Coordinating with shelter social worker for medication storage and reminders."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7764532801",
+                patient: "Daniel Taylor",
+                lastVisit: "05/24/2025",
+                facility: "Huntington Beach Hospital, California",
+                level: "Moderate",
+                patientType: "Established",
+                emCode: "99214",
+                selections: [
+                    {
+                        id: "problems-moderate-5",
+                        checked: true,
+                        justification: "Patient with complicated ankle fracture requiring immobilization and orthopedic follow-up",
+                        reference: {
+                            source: "ED Note",
+                            page: "1",
+                            line: "7-9",
+                            text: "Patient sustained inversion ankle injury while playing basketball. X-rays show bimalleolar fracture with 2mm displacement of the lateral malleolus."
+                        }
+                    },
+                    {
+                        id: "data-moderate-3",
+                        checked: true,
+                        justification: "Discussed case with orthopedic surgeon for management recommendations",
+                        reference: {
+                            source: "ED Note",
+                            page: "2",
+                            line: "14-16",
+                            text: "Discussed case with Dr. Jackson (orthopedics) who recommended splinting, non-weight bearing status, and follow-up in orthopedic clinic in 2-3 days."
+                        }
+                    },
+                    {
+                        id: "risk-moderate-2",
+                        checked: true,
+                        justification: "Planning for potential surgical intervention with risk factors of diabetes",
+                        reference: {
+                            source: "Treatment Plan",
+                            page: "3",
+                            line: "5-8",
+                            text: "Patient may require ORIF of ankle fracture. Surgical risk increased due to poorly controlled diabetes with HbA1c of 9.2%. Will need close glucose monitoring perioperatively."
+                        }
+                    }
+                ]
+            },
+            {
+                id: "7872403196",
+                patient: "Lisa Robinson",
+                lastVisit: "05/27/2025",
+                facility: "Resurrection Medical Center, Illinois",
+                level: "High",
+                patientType: "New",
+                emCode: "99205",
+                selections: [
+                    {
+                        id: "problems-high-1",
+                        checked: true,
+                        justification: "Patient with severe Crohn's disease flare unresponsive to outpatient therapy",
+                        reference: {
+                            source: "Progress Note",
+                            page: "1",
+                            line: "8-12",
+                            text: "Patient with known Crohn's disease presents with severe exacerbation including 10-12 bloody bowel movements daily for the past week, severe abdominal pain, and 10 pound weight loss. Current biologic therapy appears to be failing."
+                        }
+                    },
+                    {
+                        id: "data-high-2",
+                        checked: true,
+                        justification: "Independent interpretation of CT abdomen showing bowel wall thickening and inflammatory changes",
+                        reference: {
+                            source: "Radiology Review",
+                            page: "1",
+                            line: "3-7",
+                            text: "I reviewed the CT scan which demonstrates marked wall thickening of the terminal ileum with surrounding inflammatory changes. New fistulous tract noted extending from distal ileum to sigmoid colon not seen on prior studies."
+                        }
+                    },
+                    {
+                        id: "risk-high-3",
+                        checked: true,
+                        justification: "Emergency surgical consultation for possible bowel resection",
+                        reference: {
+                            source: "Surgical Consult",
+                            page: "1",
+                            line: "15-18",
+                            text: "Given the patient's worsening clinical status despite medical therapy and new fistulous tract, emergency surgical intervention may be necessary. Discussing with patient the risks and benefits of urgent bowel resection."
+                        }
+                    }
+                ]
+            }
+        ];
+
+        // Initialize the account list
+        function initializeAccountList() {
+            const accountList = document.getElementById('accountList');
+            accountList.innerHTML = '';
+            
+            accountsData.forEach(account => {
+                const listItem = document.createElement('li');
+                listItem.className = 'account-item';
+                listItem.dataset.accountId = account.id;
+                
+                // Add patient type badge class
+                const patientTypeBadgeClass = account.patientType === "Established" ? "established-patient" : "new-patient";
+                
+                listItem.innerHTML = `
+                    <strong>${account.patient}</strong> 
+                    <span class="patient-type-badge ${patientTypeBadgeClass}">${account.patientType}</span>
+                    <span class="em-code">${account.emCode}</span>
+                    <div class="account-details">
+                        ID: ${account.id}<br>
+                        Facility: ${account.facility}<br>
+                        Last visit: ${account.lastVisit}<br>
+                        MDM Level: ${account.level}
+                    </div>
+                `;
+                listItem.addEventListener('click', () => loadAccount(account.id));
+                accountList.appendChild(listItem);
+            });
+        }
+
+        // Filter accounts based on search input
+        function filterAccounts() {
+            const searchText = document.getElementById('accountSearch').value.toLowerCase();
+            const accountItems = document.querySelectorAll('.account-item');
+            
+            accountItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchText)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Load account data into the UI
+        function loadAccount(accountId) {
+            // Clear active state from all account items
+            document.querySelectorAll('.account-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Set active state for selected account
+            const selectedItem = document.querySelector(`.account-item[data-account-id="${accountId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('active');
+            }
+            
+            // Find the account data
+            const account = accountsData.find(acc => acc.id === accountId);
+            if (account) {
+                // Reset all checkboxes
+                resetAllCheckboxes();
+                
+                // Update account display
+                document.getElementById('accountDisplay').textContent = account.id;
+                document.getElementById('patientNameDisplay').textContent = `${account.patient} (${account.facility})`;
+                
+                // Add patient type with appropriate styling
+                const patientTypeDisplay = document.getElementById('patientTypeDisplay');
+                patientTypeDisplay.textContent = account.patientType;
+                patientTypeDisplay.className = 'patient-type-badge';
+                patientTypeDisplay.classList.add(account.patientType === "Established" ? "established-patient" : "new-patient");
+                
+                // Display E/M code
+                document.getElementById('resultPatientType').textContent = account.patientType;
+                document.getElementById('emCodeDisplay').textContent = account.emCode;
+                
+                // Apply selections
+                applySelections(account.selections);
+                
+                // Calculate MDM level
+                calculateMdmLevel();
+            }
+        }
+
+        // Helper function to reset all checkboxes
+        function resetAllCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[type=checkbox]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                const justificationDiv = document.getElementById(cb.id + '-justification');
+                if (justificationDiv) {
+                    justificationDiv.textContent = '';
+                    justificationDiv.classList.remove('has-text');
+                }
+            });
+        }
+
+        // Helper function to apply selections
+        function applySelections(selections) {
+            selections.forEach(item => {
+                const checkbox = document.getElementById(item.id);
+                if (checkbox) {
+                    checkbox.checked = item.checked;
+                    
+                    const justificationDiv = document.getElementById(item.id + '-justification');
+                    if (justificationDiv && item.justification) {
+                        // Clear existing content
+                        justificationDiv.innerHTML = '';
+                        
+                        // Create container for justification and reference
+                        const container = document.createElement('div');
+                        container.className = 'justification-container';
+                        
+                        // Add justification text
+                        container.textContent = item.justification;
+                        
+                        // Create reference popup if reference data exists
+                        if (item.reference) {
+                            const referenceDiv = document.createElement('div');
+                            referenceDiv.className = 'reference-info';
+                            referenceDiv.id = `ref-${item.id}`;
+                            
+                            // Build reference content with toggle button
+                            let referenceContent = `
+                                <div class="reference-header">
+                                    <span>Reference Information</span>
+                                    <button class="toggle-btn" onclick="event.stopPropagation(); toggleReference('ref-${item.id}')">Hide</button>
+                                </div>
+                                <div class="reference-content">
+                                    <div class="reference-source">Source: ${item.reference.source}, Page ${item.reference.page}, Line ${item.reference.line}</div>
+                                    <div class="reference-line">"${item.reference.text}"</div>
+                                </div>
+                            `;
+                            
+                            referenceDiv.innerHTML = referenceContent;
+                            container.appendChild(referenceDiv);
+                            
+                            // Add click handler to container for toggling
+                            container.addEventListener('click', function() {
+                                toggleReference(`ref-${item.id}`);
+                            });
+                        }
+                        
+                        justificationDiv.appendChild(container);
+                        justificationDiv.classList.add('has-text');
+                    }
+                }
+            });
+        }
+
+        // Function to toggle a single reference
+        function toggleReference(refId) {
+            const refElement = document.getElementById(refId);
+            if (refElement) {
+                const contentDiv = refElement.querySelector('.reference-content');
+                const toggleBtn = refElement.querySelector('.toggle-btn');
+                
+                if (contentDiv.classList.contains('hidden')) {
+                    contentDiv.classList.remove('hidden');
+                    toggleBtn.textContent = 'Hide';
+                } else {
+                    contentDiv.classList.add('hidden');
+                    toggleBtn.textContent = 'Show';
+                }
+            }
+        }
+
+        // Function to toggle all references
+        function toggleAllReferences(show) {
+            const allReferences = document.querySelectorAll('.reference-info');
+            allReferences.forEach(ref => {
+                const contentDiv = ref.querySelector('.reference-content');
+                const toggleBtn = ref.querySelector('.toggle-btn');
+                
+                if (show) {
+                    contentDiv.classList.remove('hidden');
+                    toggleBtn.textContent = 'Hide';
+                } else {
+                    contentDiv.classList.add('hidden');
+                    toggleBtn.textContent = 'Show';
+                }
+            });
+        }
+
+        // Function to toggle custom input area
+        function toggleCustomInput() {
+            const textarea = document.getElementById('customDataInput');
+            const applyBtn = document.getElementById('applyCustomBtn');
+            
+            if (textarea.style.display === 'none' || textarea.style.display === '') {
+                // Populate textarea with current account data
+                const accountId = document.getElementById('accountDisplay').textContent;
+                if (accountId !== '---') {
+                    const account = accountsData.find(acc => acc.id === accountId);
+                    if (account) {
+                        textarea.value = JSON.stringify({
+                            account: account.id,
+                            patient: account.patient,
+                            facility: account.facility,
+                            lastVisit: account.lastVisit,
+                            patientType: account.patientType,
+                            emCode: account.emCode,
+                            selections: account.selections
+                        }, null, 2);
+                    }
+                }
+                
+                textarea.style.display = 'block';
+                applyBtn.style.display = 'inline-block';
+            } else {
+                textarea.style.display = 'none';
+                applyBtn.style.display = 'none';
+            }
+        }
+
+        // Function to apply custom data from textarea
+        function applyCustomData() {
+            try {
+                const textarea = document.getElementById('customDataInput');
+                const customData = JSON.parse(textarea.value);
+                
+                if (customData && customData.selections) {
+                    // Update account if provided
+                    if (customData.account) {
+                        document.getElementById('accountDisplay').textContent = customData.account;
+                    }
+                    
+                    // Update patient name and facility if provided
+                    let patientDisplay = customData.patient || "---";
+                    if (customData.facility) {
+                        patientDisplay += ` (${customData.facility})`;
+                    }
+                    document.getElementById('patientNameDisplay').textContent = patientDisplay;
+                    
+                    // Update patient type display with proper styling
+                    const patientType = customData.patientType || "Established";
+                    const patientTypeDisplay = document.getElementById('patientTypeDisplay');
+                    patientTypeDisplay.textContent = patientType;
+                    patientTypeDisplay.className = 'patient-type-badge';
+                    patientTypeDisplay.classList.add(patientType === "Established" ? "established-patient" : "new-patient");
+                    
+                    // Update result patient type display
+                    document.getElementById('resultPatientType').textContent = patientType;
+                    
+                    // Reset all checkboxes
+                    resetAllCheckboxes();
+                    
+                    // Apply the custom data
+                    applySelections(customData.selections);
+                    
+                    // Calculate MDM level and update E/M code
+                    calculateMdmLevel();
+                    
+                    // Hide textarea after applying
+                    textarea.style.display = 'none';
+                    document.getElementById('applyCustomBtn').style.display = 'none';
+                } else {
+                    alert('Invalid data format. JSON must contain a "selections" array.');
+                }
+            } catch (error) {
+                alert('Error parsing JSON: ' + error.message);
+            }
+        }
+
+        // Calculate MDM level and corresponding E/M code
+        function calculateMdmLevel() {
+            const problemLevel = calculateProblemLevel();
+            const dataLevel = calculateDataLevel();
+            const riskLevel = calculateRiskLevel();
+            
+            // Define the hierarchy of levels
+            const levelHierarchy = {
+                "N/A": 0,
+                "Straightforward": 1,
+                "Low": 2,
+                "Moderate": 3,
+                "High": 4
+            };
+            
+            // Convert levels to numerical values
+            const levels = [
+                levelHierarchy[problemLevel],
+                levelHierarchy[dataLevel],
+                levelHierarchy[riskLevel]
+            ];
+            
+            // Sort levels in descending order
+            levels.sort((a, b) => b - a);
+            
+            // Get the second highest level (2 out of 3 elements must meet or exceed)
+            const secondHighest = levels[1];
+            
+            // Convert back to string
+            const levelNames = {};
+            Object.keys(levelHierarchy).forEach(key => {
+                levelNames[levelHierarchy[key]] = key;
+            });
+
+            const mdmLevel = levelNames[secondHighest];
+            
+            // Update MDM level display
+            document.getElementById('mdmLevel').textContent = mdmLevel;
+            
+            // Get patient type and calculate E/M code
+            const patientType = document.getElementById('patientTypeDisplay').textContent;
+            const emCode = determineEMCode(mdmLevel, patientType);
+            
+            // Update E/M code display
+            document.getElementById('emCodeDisplay').textContent = emCode;
+            
+            return mdmLevel;
+        }
+
+        function calculateProblemLevel() {
+            // High level problems
+            if (isAnyChecked(["problems-high-1", "problems-high-2"])) {
+                return "High";
+            }
+            
+            // Moderate level problems
+            if (isAnyChecked(["problems-moderate-1", "problems-moderate-2", "problems-moderate-3", "problems-moderate-4", "problems-moderate-5"])) {
+                return "Moderate";
+            }
+            
+            // Low level problems
+            if (isAnyChecked(["problems-low-1", "problems-low-2", "problems-low-3"])) {
+                return "Low";
+            }
+            
+            // Straightforward level problems
+            if (document.getElementById("problems-minimal-1").checked) {
+                return "Straightforward";
+            }
+            
+            // N/A level
+            if (document.getElementById("problems-na-1").checked) {
+                return "N/A";
+            }
+            
+            return "Straightforward";  // Default level
+        }
+
+        function calculateDataLevel() {
+            // High level data
+            if (document.getElementById("data-high-1").checked || 
+                (document.getElementById("data-high-2").checked && document.getElementById("data-high-3").checked)) {
+                return "High";
+            }
+            
+            // Moderate level data
+            if (isAnyChecked(["data-moderate-1", "data-moderate-2", "data-moderate-3"])) {
+                return "Moderate";
+            }
+            
+            // Low level data
+            if (isAnyChecked(["data-low-1", "data-low-2", "data-low-3", "data-low-4"])) {
+                return "Low";
+            }
+            
+            // Minimal level data
+            if (document.getElementById("data-minimal-1").checked) {
+                return "Straightforward";
+            }
+            
+            // N/A level
+            if (document.getElementById("data-na-1").checked) {
+                return "N/A";
+            }
+            
+            return "Straightforward";  // Default level
+        }
+
+        function calculateRiskLevel() {
+            // High level risk
+            if (isAnyChecked(["risk-high-1", "risk-high-2", "risk-high-3", "risk-high-4", "risk-high-5"])) {
+                return "High";
+            }
+            
+            // Moderate level risk
+            if (isAnyChecked(["risk-moderate-1", "risk-moderate-2", "risk-moderate-3", "risk-moderate-4"])) {
+                return "Moderate";
+            }
+            
+            // Low level risk
+            if (document.getElementById("risk-low-1").checked) {
+                return "Low";
+            }
+            
+            // Minimal level risk
+            if (document.getElementById("risk-minimal-1").checked) {
+                return "Straightforward";
+            }
+            
+            // N/A level
+            if (document.getElementById("risk-na-1").checked) {
+                return "N/A";
+            }
+            
+            return "Straightforward";  // Default level
+        }
+
+        function isAnyChecked(ids) {
+            return ids.some(id => document.getElementById(id).checked);
+        }
+
+        // Initialize when the page loads
+        window.onload = function() {
+            initializeAccountList();
+            // Load the first account by default
+            if (accountsData.length > 0) {
+                loadAccount(accountsData[0].id);
+            }
+        };
+
+        // Function to load and render patient data
+        async function loadPatients() {
+            try {
+                const response = await fetch('/get_patients');
+                const patients = await response.json();
+                const accountList = document.querySelector('.account-list');
+                accountList.innerHTML = ''; // Clear existing items
+
+                patients.forEach(patient => {
+                    const li = document.createElement('li');
+                    li.className = 'account-item';
+                    li.onclick = () => selectPatient(patient);
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = patient.name;
+                    nameSpan.style.fontWeight = 'bold';
+                    li.appendChild(nameSpan);
+
+                    const statusBadge = document.createElement('span');
+                    statusBadge.textContent = patient.status;
+                    statusBadge.style.marginLeft = '8px';
+                    statusBadge.style.padding = '2px 6px';
+                    statusBadge.style.backgroundColor = patient.status === 'Established' ? '#4CAF50' : '#ff6b6b';
+                    statusBadge.style.color = 'white';
+                    statusBadge.style.borderRadius = '3px';
+                    statusBadge.style.fontSize = '0.8em';
+                    li.appendChild(statusBadge);
+
+                    const zipSpan = document.createElement('span');
+                    zipSpan.textContent = patient.zipCode;
+                    zipSpan.style.display = 'block';
+                    zipSpan.style.fontSize = '0.9em';
+                    zipSpan.style.color = '#666';
+                    li.appendChild(zipSpan);
+
+                    const details = document.createElement('div');
+                    details.className = 'account-details';
+                    details.innerHTML = `
+                        ID: ${patient.id}<br>
+                        Facility: ${patient.facility}<br>
+                        Last visit: ${patient.lastVisit}<br>
+                        MDM Level: ${patient.mdmLevel}
+                    `;
+                    li.appendChild(details);
+
+                    accountList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error loading patients:', error);
+            }
+        }
+
+        // Function to select and display patient details
+        function selectPatient(patient) {
+            // Update header information
+            document.querySelector('h1').textContent = 'CPT E/M MDM Grid';
+            document.querySelector('.header h3').textContent = `Account: ${patient.id}`;
+            document.querySelector('.header h4').textContent = `Patient: ${patient.name} (${patient.facility})`;
+            
+            // Update patient type display with proper styling
+            const patientTypeDisplay = document.getElementById('patientTypeDisplay');
+            patientTypeDisplay.textContent = patient.status;
+            patientTypeDisplay.className = 'patient-type-badge';
+            patientTypeDisplay.classList.add(patient.status === "Established" ? "established-patient" : "new-patient");
+            
+            // Update result patient type display
+            document.getElementById('resultPatientType').textContent = patient.status;
+            
+            // Clear any existing selections and justifications
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+                const justificationDiv = document.getElementById(`${checkbox.id}-justification`);
+                if (justificationDiv) {
+                    justificationDiv.textContent = '';
+                    justificationDiv.classList.remove('has-text');
+                }
+            });
+            
+            // Handle selections if they exist
+            if (patient.selections && Array.isArray(patient.selections)) {
+                patient.selections.forEach(selection => {
+                    const checkbox = document.getElementById(selection.id);
+                    if (checkbox) {
+                        checkbox.checked = selection.checked;
+                        
+                        const justificationDiv = document.getElementById(`${selection.id}-justification`);
+                        if (justificationDiv && selection.justification) {
+                            justificationDiv.innerHTML = '';
+                            
+                            // Create container for justification and reference
+                            const container = document.createElement('div');
+                            container.className = 'justification-container';
+                            container.textContent = selection.justification;
+                            
+                            // Add reference information if available
+                            if (selection.reference) {
+                                const referenceDiv = document.createElement('div');
+                                referenceDiv.className = 'reference-info';
+                                referenceDiv.innerHTML = `
+                                    <div class="reference-header">
+                                        <span>Reference Information</span>
+                                        <button class="toggle-btn">Hide</button>
+                                    </div>
+                                    <div class="reference-content">
+                                        <div class="reference-source">Source: ${selection.reference.source}</div>
+                                        <div class="reference-line">${selection.reference.text}</div>
+                                    </div>
+                                `;
+                                container.appendChild(referenceDiv);
+                            }
+                            
+                            justificationDiv.appendChild(container);
+                            justificationDiv.classList.add('has-text');
+                        }
+                    }
+                });
+            }
+            
+            // Update active state in sidebar
+            document.querySelectorAll('.account-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.querySelector('.account-details').textContent.includes(patient.id)) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Calculate MDM level and E/M code based on selections
+            calculateMdmLevel();
+        }
+
+        // Function to determine E/M code based on MDM level and patient type
+        function determineEMCode(mdmLevel, patientType) {
+            if (patientType === "New") {
+                switch(mdmLevel) {
+                    case "Straightforward":
+                        return "99202";
+                    case "Low":
+                        return "99203";
+                    case "Moderate":
+                        return "99204";
+                    case "High":
+                        return "99205";
+                    default:
+                        return "---";
+                }
+            } else { // Established
+                switch(mdmLevel) {
+                    case "Straightforward":
+                        return "99212";
+                    case "Low":
+                        return "99213";
+                    case "Moderate":
+                        return "99214";
+                    case "High":
+                        return "99215";
+                    default:
+                        return "---";
+                }
+            }
+        }
+
+        // Load patients when the page loads
+        document.addEventListener('DOMContentLoaded', loadPatients);
+
+        // Add search functionality
+        document.querySelector('.search-box').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.account-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html> 
