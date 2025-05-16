@@ -1522,6 +1522,18 @@ Example:
             document.querySelector('.header h3').textContent = `Account: ${patient.id}`;
             document.querySelector('.header h4').textContent = `Patient: ${patient.name} (${patient.facility})`;
             
+            // Update patient type display with proper styling
+            const patientTypeDisplay = document.getElementById('patientTypeDisplay');
+            patientTypeDisplay.textContent = patient.status;
+            patientTypeDisplay.className = 'patient-type-badge';
+            patientTypeDisplay.classList.add(patient.status === "Established" ? "established-patient" : "new-patient");
+            
+            // Update result patient type display
+            document.getElementById('resultPatientType').textContent = patient.status;
+            
+            // Update MDM Level display
+            document.getElementById('mdmLevel').textContent = patient.mdmLevel || '---';
+            
             // Clear any existing selections and justifications
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
@@ -1571,35 +1583,6 @@ Example:
                     }
                 });
             }
-            // If no selections array but has individual problem/data/risk fields (backward compatibility)
-            else {
-                if (patient.problems) {
-                    document.getElementById('problems-minimal-1').checked = true;
-                    const problemJustification = document.getElementById('problems-minimal-1-justification');
-                    if (problemJustification) {
-                        problemJustification.textContent = patient.problems.description;
-                        problemJustification.classList.add('has-text');
-                    }
-                }
-                
-                if (patient.data) {
-                    document.getElementById('data-minimal-1').checked = true;
-                    const dataJustification = document.getElementById('data-minimal-1-justification');
-                    if (dataJustification) {
-                        dataJustification.textContent = patient.data.description;
-                        dataJustification.classList.add('has-text');
-                    }
-                }
-                
-                if (patient.risk) {
-                    document.getElementById('risk-minimal-1').checked = true;
-                    const riskJustification = document.getElementById('risk-minimal-1-justification');
-                    if (riskJustification) {
-                        riskJustification.textContent = patient.risk.description;
-                        riskJustification.classList.add('has-text');
-                    }
-                }
-            }
             
             // Update active state in sidebar
             document.querySelectorAll('.account-item').forEach(item => {
@@ -1609,8 +1592,43 @@ Example:
                 }
             });
             
-            // Calculate MDM level after setting all checkboxes
-            calculateMdmLevel();
+            // Calculate MDM level and determine E/M code
+            const mdmLevel = patient.mdmLevel || calculateMdmLevel();
+            const emCode = determineEMCode(mdmLevel, patient.status);
+            
+            // Update E/M code display
+            document.getElementById('emCodeDisplay').textContent = emCode;
+        }
+
+        // Function to determine E/M code based on MDM level and patient type
+        function determineEMCode(mdmLevel, patientType) {
+            if (patientType === "New") {
+                switch(mdmLevel) {
+                    case "Straightforward":
+                        return "99202";
+                    case "Low":
+                        return "99203";
+                    case "Moderate":
+                        return "99204";
+                    case "High":
+                        return "99205";
+                    default:
+                        return "---";
+                }
+            } else { // Established
+                switch(mdmLevel) {
+                    case "Straightforward":
+                        return "99212";
+                    case "Low":
+                        return "99213";
+                    case "Moderate":
+                        return "99214";
+                    case "High":
+                        return "99215";
+                    default:
+                        return "---";
+                }
+            }
         }
 
         // Load patients when the page loads
