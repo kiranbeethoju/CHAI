@@ -1532,81 +1532,71 @@ Example:
                 }
             });
             
-            // If the patient has specific MDM data, set it
-            if (patient.problems) {
-                document.getElementById('problems-minimal-1').checked = true;
-                const problemJustification = document.getElementById('problems-minimal-1-justification');
-                if (problemJustification) {
-                    problemJustification.textContent = patient.problems.description;
-                    problemJustification.classList.add('has-text');
-                    
-                    // Add reference information if available
-                    if (patient.problems.source) {
-                        const referenceDiv = document.createElement('div');
-                        referenceDiv.className = 'reference-info';
-                        referenceDiv.innerHTML = `
-                            <div class="reference-header">
-                                <span>Reference Information</span>
-                                <button class="toggle-btn">Hide</button>
-                            </div>
-                            <div class="reference-content">
-                                <div class="reference-source">Source: ${patient.problems.source}</div>
-                                <div class="reference-line">${patient.problems.details || ''}</div>
-                            </div>
-                        `;
-                        problemJustification.appendChild(referenceDiv);
+            // Handle selections if they exist
+            if (patient.selections && Array.isArray(patient.selections)) {
+                patient.selections.forEach(selection => {
+                    const checkbox = document.getElementById(selection.id);
+                    if (checkbox) {
+                        checkbox.checked = selection.checked;
+                        
+                        const justificationDiv = document.getElementById(`${selection.id}-justification`);
+                        if (justificationDiv && selection.justification) {
+                            justificationDiv.innerHTML = '';
+                            
+                            // Create container for justification and reference
+                            const container = document.createElement('div');
+                            container.className = 'justification-container';
+                            container.textContent = selection.justification;
+                            
+                            // Add reference information if available
+                            if (selection.reference) {
+                                const referenceDiv = document.createElement('div');
+                                referenceDiv.className = 'reference-info';
+                                referenceDiv.innerHTML = `
+                                    <div class="reference-header">
+                                        <span>Reference Information</span>
+                                        <button class="toggle-btn">Hide</button>
+                                    </div>
+                                    <div class="reference-content">
+                                        <div class="reference-source">Source: ${selection.reference.source}</div>
+                                        <div class="reference-line">${selection.reference.text}</div>
+                                    </div>
+                                `;
+                                container.appendChild(referenceDiv);
+                            }
+                            
+                            justificationDiv.appendChild(container);
+                            justificationDiv.classList.add('has-text');
+                        }
+                    }
+                });
+            }
+            // If no selections array but has individual problem/data/risk fields (backward compatibility)
+            else {
+                if (patient.problems) {
+                    document.getElementById('problems-minimal-1').checked = true;
+                    const problemJustification = document.getElementById('problems-minimal-1-justification');
+                    if (problemJustification) {
+                        problemJustification.textContent = patient.problems.description;
+                        problemJustification.classList.add('has-text');
                     }
                 }
-            }
-            
-            if (patient.data) {
-                document.getElementById('data-minimal-1').checked = true;
-                const dataJustification = document.getElementById('data-minimal-1-justification');
-                if (dataJustification) {
-                    dataJustification.textContent = patient.data.description;
-                    dataJustification.classList.add('has-text');
-                    
-                    // Add reference information if available
-                    if (patient.data.source) {
-                        const referenceDiv = document.createElement('div');
-                        referenceDiv.className = 'reference-info';
-                        referenceDiv.innerHTML = `
-                            <div class="reference-header">
-                                <span>Reference Information</span>
-                                <button class="toggle-btn">Hide</button>
-                            </div>
-                            <div class="reference-content">
-                                <div class="reference-source">Source: ${patient.data.source}</div>
-                                <div class="reference-line">${patient.data.details || ''}</div>
-                            </div>
-                        `;
-                        dataJustification.appendChild(referenceDiv);
+                
+                if (patient.data) {
+                    document.getElementById('data-minimal-1').checked = true;
+                    const dataJustification = document.getElementById('data-minimal-1-justification');
+                    if (dataJustification) {
+                        dataJustification.textContent = patient.data.description;
+                        dataJustification.classList.add('has-text');
                     }
                 }
-            }
-            
-            if (patient.risk) {
-                document.getElementById('risk-minimal-1').checked = true;
-                const riskJustification = document.getElementById('risk-minimal-1-justification');
-                if (riskJustification) {
-                    riskJustification.textContent = patient.risk.description;
-                    riskJustification.classList.add('has-text');
-                    
-                    // Add reference information if available
-                    if (patient.risk.source) {
-                        const referenceDiv = document.createElement('div');
-                        referenceDiv.className = 'reference-info';
-                        referenceDiv.innerHTML = `
-                            <div class="reference-header">
-                                <span>Reference Information</span>
-                                <button class="toggle-btn">Hide</button>
-                            </div>
-                            <div class="reference-content">
-                                <div class="reference-source">Source: ${patient.risk.source}</div>
-                                <div class="reference-line">${patient.risk.details || ''}</div>
-                            </div>
-                        `;
-                        riskJustification.appendChild(referenceDiv);
+                
+                if (patient.risk) {
+                    document.getElementById('risk-minimal-1').checked = true;
+                    const riskJustification = document.getElementById('risk-minimal-1-justification');
+                    if (riskJustification) {
+                        riskJustification.textContent = patient.risk.description;
+                        riskJustification.classList.add('has-text');
                     }
                 }
             }
