@@ -12,22 +12,118 @@ def index():
 def get_patients():
     with open('sample_data.json', 'r') as f:
         patients = json.load(f)
+        
+        # Calculate MDM level for each patient based on their selections
+        for patient in patients:
+            if 'selections' in patient:
+                mdm_level = calculate_mdm_from_selections(patient['selections'])
+                patient['mdmLevel'] = mdm_level
+                patient['emCode'] = determine_em_code(mdm_level, patient['status'])
+                
     return jsonify(patients)
+
+def calculate_mdm_from_selections(selections):
+    # Initialize counters and flags for each category
+    problems = {
+        'high': False,
+        'moderate': False,
+        'low': False,
+        'minimal': False
+    }
+    
+    data = {
+        'high': False,
+        'moderate': False,
+        'low': False,
+        'minimal': False
+    }
+    
+    risk = {
+        'high': False,
+        'moderate': False,
+        'low': False,
+        'minimal': False
+    }
+    
+    # Process each selection
+    for selection in selections:
+        if selection.get('checked', False):
+            category, level, _ = selection['id'].split('-')
+            if category in ['problems', 'data', 'risk']:
+                if level in ['high', 'moderate', 'low', 'minimal']:
+                    locals()[category][level] = True
+    
+    # Determine level for each category
+    def get_level(category):
+        if category['high']: return 'High'
+        if category['moderate']: return 'Moderate'
+        if category['low']: return 'Low'
+        if category['minimal']: return 'Straightforward'
+        return 'Straightforward'
+    
+    problem_level = get_level(problems)
+    data_level = get_level(data)
+    risk_level = get_level(risk)
+    
+    # Convert levels to numerical values
+    level_values = {
+        'High': 4,
+        'Moderate': 3,
+        'Low': 2,
+        'Straightforward': 1
+    }
+    
+    # Get numerical values and sort
+    values = [
+        level_values[problem_level],
+        level_values[data_level],
+        level_values[risk_level]
+    ]
+    values.sort(reverse=True)
+    
+    # Get the second highest value (2 out of 3 rule)
+    second_highest = values[1]
+    
+    # Convert back to string
+    for level, value in level_values.items():
+        if value == second_highest:
+            return level
+    
+    return 'Straightforward'
+
+def determine_em_code(mdm_level, patient_type):
+    if patient_type == "New":
+        return {
+            'Straightforward': '99202',
+            'Low': '99203',
+            'Moderate': '99204',
+            'High': '99205'
+        }.get(mdm_level, '99202')
+    else:  # Established
+        return {
+            'Straightforward': '99212',
+            'Low': '99213',
+            'Moderate': '99214',
+            'High': '99215'
+        }.get(mdm_level, '99212')
 
 @app.route("/api/update_grid", methods=["POST"])
 def update_grid():
     data = request.json
-    grid = data.get("grid", {})
-    account = data.get("account", "unknown")
-    justifications = data.get("justifications", {})
-
-    em_level = derive_em_level(grid)
-    return jsonify(
-        account=account,
-        e_m_level=em_level,
-        grid=grid,
-        justifications=justifications
-    )
+    selections = data.get("selections", [])
+    patient_type = data.get("patientType", "Established")
+    
+    # Calculate MDM level from selections
+    mdm_level = calculate_mdm_from_selections(selections)
+    
+    # Determine E/M code
+    em_code = determine_em_code(mdm_level, patient_type)
+    
+    return jsonify({
+        "mdmLevel": mdm_level,
+        "emCode": em_code,
+        "selections": selections
+    })
 
 @app.route("/api/set_selections", methods=["POST"])
 def set_selections():
