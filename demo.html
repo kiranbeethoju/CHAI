@@ -1310,51 +1310,13 @@ Example:
             });
 
             const mdmLevel = levelNames[secondHighest];
+            
+            // Update MDM level display
             document.getElementById('mdmLevel').textContent = mdmLevel;
             
-            // Get current patient type
+            // Get patient type and calculate E/M code
             const patientType = document.getElementById('patientTypeDisplay').textContent;
-            
-            // Determine E/M code based on MDM level and patient type
-            let emCode = "---";
-            
-            if (patientType === "New") {
-                // New patient E/M codes
-                switch(mdmLevel) {
-                    case "Straightforward":
-                        emCode = "99202";
-                        break;
-                    case "Low":
-                        emCode = "99203";
-                        break;
-                    case "Moderate":
-                        emCode = "99204";
-                        break;
-                    case "High":
-                        emCode = "99205";
-                        break;
-                    default:
-                        emCode = "---";
-                }
-            } else {
-                // Established patient E/M codes
-                switch(mdmLevel) {
-                    case "Straightforward":
-                        emCode = "99212";
-                        break;
-                    case "Low":
-                        emCode = "99213";
-                        break;
-                    case "Moderate":
-                        emCode = "99214";
-                        break;
-                    case "High":
-                        emCode = "99215";
-                        break;
-                    default:
-                        emCode = "---";
-                }
-            }
+            const emCode = determineEMCode(mdmLevel, patientType);
             
             // Update E/M code display
             document.getElementById('emCodeDisplay').textContent = emCode;
@@ -1531,9 +1493,6 @@ Example:
             // Update result patient type display
             document.getElementById('resultPatientType').textContent = patient.status;
             
-            // Update MDM Level display
-            document.getElementById('mdmLevel').textContent = patient.mdmLevel || '---';
-            
             // Clear any existing selections and justifications
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
@@ -1592,12 +1551,8 @@ Example:
                 }
             });
             
-            // Calculate MDM level and determine E/M code
-            const mdmLevel = patient.mdmLevel || calculateMdmLevel();
-            const emCode = determineEMCode(mdmLevel, patient.status);
-            
-            // Update E/M code display
-            document.getElementById('emCodeDisplay').textContent = emCode;
+            // Calculate MDM level and E/M code based on selections
+            calculateMdmLevel();
         }
 
         // Function to determine E/M code based on MDM level and patient type
